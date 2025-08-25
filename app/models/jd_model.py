@@ -7,3 +7,15 @@ class JobInput(BaseModel):
     experienceRange: str
     department: str
     subDepartment: Optional[str] = None
+
+class JobTitleAISujjestInput(BaseModel):
+    title: str
+    experienceRange: str
+    department: str 
+    subDepartment: Optional[str] 
+    keyResponsibilities: List[str] 
+    softSkills: List[str] 
+    technicalSkills: List[str]
+    education: List[str]
+    certifications: Optional[List[str]]
+    niceToHave: Optional[List[str]]

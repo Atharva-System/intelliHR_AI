@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from agents.jd_genrator import return_jd
-from app.models.jd_model import JobInput
+from agents.jd_title_sujjestion import title_sujjest
+from app.models.jd_model import JobInput,JobTitleAISujjestInput
 import json
 
 router = APIRouter()
@@ -14,6 +15,9 @@ def generate_job_description(job: JobInput):
         department=job.department,
         subDepartment=job.subDepartment or ""
     )
+    return response
 
-    # response is already a dict, so return directly
+@router.post("/generate-AI-titleSujjestion")
+def job_title_sujjestion(job:JobTitleAISujjestInput):
+    response = title_sujjest(job)
     return response

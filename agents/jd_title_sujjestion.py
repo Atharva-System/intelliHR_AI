@@ -1,0 +1,83 @@
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
+import os
+from dotenv import load_dotenv
+from agents.types import JobDescriptionTitleAISujjest
+from langchain.output_parsers import PydanticOutputParser
+from langchain_google_genai import GoogleGenerativeAI
+from app.models.jd_model import JobTitleAISujjestInput
+load_dotenv()
+
+key = os.getenv("API_KEY")
+model = os.getenv("MODEL")
+
+def title_sujjest(job:JobTitleAISujjestInput):
+    job_title_prompt = PromptTemplate(
+        input_variables=[
+            "title",
+            "experienceRange",
+            "department",
+            "subDepartment",
+            "keyResponsibilities",
+            "softSkills",
+            "technicalSkills",
+            "education",
+            "certifications",
+            "niceToHave",
+        ],
+        template="""
+    You are an AI that suggests job titles based on the following job information:
+
+    - Current Job Title: {title}
+    - Experience Range: {experienceRange}
+    - Department: {department}
+    - Sub-Department: {subDepartment}
+    - Key Responsibilities: {keyResponsibilities}
+    - Soft Skills: {softSkills}
+    - Technical Skills: {technicalSkills}
+    - Education Requirements: {education}
+    - Certifications: {certifications}
+    - Nice to Have: {niceToHave}
+
+    Return a JSON list of 5-10 suitable alternative job titles, in the following format:
+
+    {{"title": ["title1", "title2", "title3", ...]}}
+    """
+    )
+
+    parser = PydanticOutputParser(pydantic_object=JobDescriptionTitleAISujjest)
+
+
+    llm = GoogleGenerativeAI(model=model, google_api_key=key,temperature=0.2,max_output_tokens=10000)
+
+    chain = LLMChain(llm=llm,prompt=job_title_prompt,verbose=True,output_parser=parser)
+
+
+    raw_output = chain.invoke({
+        "title": job.title,
+        "experienceRange": job.experienceRange,
+        "department": job.department,
+        "subDepartment": job.subDepartment or "",
+        "keyResponsibilities": job.keyResponsibilities,
+        "softSkills": job.softSkills,
+        "technicalSkills": job.technicalSkills,
+        "education": job.education,
+        "certifications": job.certifications or [],
+        "niceToHave": job.niceToHave or []
+    })
+    if isinstance(raw_output, dict) and "text" in raw_output:
+        parsed = raw_output["text"]
+    else:
+        parsed = raw_output
+
+    if isinstance(parsed, dict):
+        job_fields = [
+            "keyResponsibilities",
+            "softSkills",
+            "technicalSkills",
+            "education",
+            "certifications",
+            "niceToHave"
+        ]
+        return {k: parsed.get(k) for k in job_fields}
+    return parsed
