@@ -2,3 +2,6 @@ langchain
 langgraph
 fastapi
 uvicorn
+pytest
+python-dotenv
+langchain-google-genai

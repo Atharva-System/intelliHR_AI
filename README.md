@@ -61,7 +61,7 @@ This will start the FastAPI server with auto-reload enabled for development. By 
 
 ### Running Tests
 ```bash
-pytest
+pytest -v
 ```
 
 ## Contributing
