@@ -2,13 +2,6 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 
 
-class JobInput(BaseModel):
-    title: str
-    experienceRange: str
-    department: str
-    subDepartment: Optional[str] = None
-    
-
 class JobDescriptionOutline(BaseModel):
     keyResponsibilities: List[str] = Field(..., description="List of key responsibilities")
     softSkills: List[str] = Field(..., description="List of soft skills")

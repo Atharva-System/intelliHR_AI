@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from agents.jd_genrator import return_jd
-from agents.types import JobInput
+from app.models.jd_model import JobInput
 import json
 
 router = APIRouter()

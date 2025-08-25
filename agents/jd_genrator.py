@@ -38,12 +38,12 @@ def return_jd(title, experienceRange, department, subDepartment):
         template=template
     )
 
-    output_parser = PydanticOutputParser(pydantic_object=JobDescriptionOutline)
+    parser = PydanticOutputParser(pydantic_object=JobDescriptionOutline)
 
 
     llm = GoogleGenerativeAI(model=model, google_api_key=key,temperature=0.2,max_output_tokens=10000)
 
-    chain = LLMChain(llm=llm,prompt=prompt,verbose=True)
+    chain = LLMChain(llm=llm,prompt=prompt,verbose=True,output_parser=parser)
     raw_output = chain.invoke({
         "title": title,
         "experienceRange": experienceRange,
@@ -51,4 +51,20 @@ def return_jd(title, experienceRange, department, subDepartment):
         "subDepartment": subDepartment or ""
     })
 
-    return output_parser.parse(raw_output["text"] if isinstance(raw_output, dict) and "text" in raw_output else raw_output)
+    
+    if isinstance(raw_output, dict) and "text" in raw_output:
+        parsed = raw_output["text"]
+    else:
+        parsed = raw_output
+
+    if isinstance(parsed, dict):
+        job_fields = [
+            "keyResponsibilities",
+            "softSkills",
+            "technicalSkills",
+            "education",
+            "certifications",
+            "niceToHave"
+        ]
+        return {k: parsed.get(k) for k in job_fields}
+    return parsed
