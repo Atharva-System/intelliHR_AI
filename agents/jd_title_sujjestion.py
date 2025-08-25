@@ -69,15 +69,4 @@ def title_sujjest(job:JobTitleAISujjestInput):
         parsed = raw_output["text"]
     else:
         parsed = raw_output
-
-    if isinstance(parsed, dict):
-        job_fields = [
-            "keyResponsibilities",
-            "softSkills",
-            "technicalSkills",
-            "education",
-            "certifications",
-            "niceToHave"
-        ]
-        return {k: parsed.get(k) for k in job_fields}
     return parsed
