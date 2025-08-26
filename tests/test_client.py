@@ -74,7 +74,3 @@ def test_AI_titleSujjestion():
     
     assert response.status_code == 200
     
-
-
-
-
