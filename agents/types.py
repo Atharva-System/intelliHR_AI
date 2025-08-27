@@ -31,27 +31,47 @@ class EnhanceniceToHave(BaseModel):
     niceToHave: Optional[List[str]] = Field(None, description="List of nice-to-have skills (optional)")
 
 
-class CandidateAllInOne(BaseModel):
+class PersonalInfo(BaseModel):
     full_name: Optional[str] = None
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     location: Optional[str] = None
+
+
+class WorkExperience(BaseModel):
     company: Optional[str] = None
     position: Optional[str] = None
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     is_current: Optional[bool] = None
     technologies: Optional[List[str]] = None
+
+
+class Education(BaseModel):
     institution: Optional[str] = None
     degree: Optional[str] = None
     field_of_study: Optional[str] = None
     start_date: Optional[str] = None
     end_date: Optional[str] = None
+
+
+class Skills(BaseModel):
     technical_skills: Optional[List[str]] = None
     soft_skills: Optional[List[str]] = None
+
+
+class AIAnalysis(BaseModel):
     experience_level: Optional[str] = None
     primary_domain: Optional[str] = None
     key_strengths: Optional[List[str]] = None
     career_progression_score: Optional[int] = None
     skill_diversity_score: Optional[int] = None
-    good_point: Optional[str]=None
+    good_point: Optional[str] = None
+
+
+class CandidateAllInOne(BaseModel):
+    personal_info: Optional[PersonalInfo] = None
+    work_experience: Optional[List[WorkExperience]] = None
+    education: Optional[List[Education]] = None
+    skills: Optional[Skills] = None
+    ai_analysis: Optional[AIAnalysis] = None
