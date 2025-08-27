@@ -5,3 +5,4 @@ uvicorn
 pytest
 python-dotenv
 langchain-google-genai
+PyPDF2

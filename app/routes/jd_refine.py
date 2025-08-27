@@ -1,7 +1,9 @@
+import json
 from fastapi import APIRouter, HTTPException
 from app.models.jd_model import JobRefineInput
 from agents.jd_regenrate import key_resp_chain_re, soft_chain_re, tech_chain_re, edu_chain_re, cert_chain_re, nice_chain_re
 from agents.jd_enhance import nice_chain,cert_chain,edu_chain,tech_chain,soft_chain,key_resp_chain
+from agents.resume_extractor import resume_info
 import logging
 
 router = APIRouter()
@@ -75,3 +77,5 @@ def refine_job_field(job: JobRefineInput):
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Error processing {field_name}: {str(e)}")
     return {"error": "No valid field to refine found in input."}
+
+
