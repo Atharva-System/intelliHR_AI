@@ -74,3 +74,45 @@ def test_AI_titleSujjestion():
     
     assert response.status_code == 200
     
+def test_refine_job_field_regenerate():
+    payload = {
+        "title": "Software Engineer",
+        "experienceRange": "3-5 years",
+        "department": "Engineering",
+        "subDepartment": "Backend",
+        "keyResponsibilities": [
+            "Develop and maintain backend services",
+            "Collaborate with frontend developers",
+            "Write clean, scalable code"
+        ]
+    }
+
+    response = client.post("/regenrate-job-field", json=payload)
+    
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert "keyResponsibilities" in data
+    assert isinstance(data["keyResponsibilities"], list)
+
+
+def test_refine_job_field_enhance():
+    payload = {
+        "title": "Data Scientist",
+        "experienceRange": "2-4 years",
+        "department": "Engineering",
+        "subDepartment": "AI/ML",
+        "technicalSkills": [
+            "Python", 
+            "Machine Learning", 
+            "Data Analysis"
+        ]
+    }
+
+    response = client.post("/enhance-job-field", json=payload)
+    
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert "technicalSkills" in data
+    assert isinstance(data["technicalSkills"], list)
