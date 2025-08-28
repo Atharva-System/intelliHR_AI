@@ -17,7 +17,8 @@ llm = GoogleGenerativeAI(
     model=model,
     google_api_key=key,
     temperature=0.2,
-    max_output_tokens=10000
+    max_output_tokens=5000,
+    
 )
 
 parser = PydanticOutputParser(pydantic_object=CandidateAllInOne)
@@ -25,8 +26,16 @@ parser = PydanticOutputParser(pydantic_object=CandidateAllInOne)
 prompt = PromptTemplate(
     input_variables=["text"],
     template = """
-You are an expert data extractor. Extract candidate information from the given text and return it strictly in valid JSON matching the CandidateAllInOne schema.
-good point in only write if user menshion some impact full infomation other wise say null.
+You are an expert data extractor. Extract candidate information from the given text and return it strictly in valid JSON matching the CandidateAllInOne schema. Adhere to the following anti-hallucination policy to ensure accuracy:
+
+**Anti-Hallucination Policy**:
+- Extract only information explicitly stated in the provided text.
+- Do not infer, assume, or generate any information not directly present.
+- If a field or value is not explicitly mentioned, set it to null.
+- Do not embellish, summarize, or add details beyond the text.
+- For the 'good_point' field in ai_analysis, include a value only if the text explicitly mentions impactful contributions or achievements; otherwise, set it to null.
+- Ensure all output strictly matches the provided schema without deviations.
+
 Schema (nested JSON):
 {{
   "personal_info": {{
@@ -89,15 +98,16 @@ candidate_extraction_chain = LLMChain(
     verbose=True
 )
 
-def resume_info():
-    pdf_path = "./app/services/sample.pdf"
+def resume_info(pdf_path):
     input_text = pdf_to_text(pdf_path)
-
     try:
         candidate = candidate_extraction_chain.run(text=input_text)
-        result = candidate.json()
+        result = json.loads(candidate.json())  # Parse the JSON string into a dictionary
     except Exception:
         raw_output = llm(f"Extract JSON only from this text:\n{input_text}")
-        result = json.loads(raw_output)
-    print(result)  
+        try:
+            result = json.loads(raw_output)  # Ensure this is a dictionary
+        except json.JSONDecodeError as json_err:
+            raise Exception(f"Failed to parse extracted JSON: {str(json_err)}")
+    print(result)
     return result
