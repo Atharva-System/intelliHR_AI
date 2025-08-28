@@ -69,9 +69,14 @@ def download_and_save(payload: MultipleFiles):
                 "file_name": file.file_name,
                 "error": f"Failed to process file: {str(e)}"
             })
+        finally:
+            if save_path and os.path.exists(save_path):
+                os.remove(save_path)
+            
     
     return {
         "status": "success",
         "saved_files": saved_files,
         "extracted_data": extracted_data
     }
+    
