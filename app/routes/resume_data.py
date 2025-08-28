@@ -7,7 +7,9 @@ from fastapi import APIRouter, HTTPException
 from openai import BaseModel
 from agents.resume_extractor import resume_info
 import logging
+import uuid
 
+id = uuid.uuid1()
 router = APIRouter()
 
 
@@ -44,7 +46,7 @@ def download_and_save(payload: MultipleFiles):
             
         
             file_bytes = base64.b64decode(file.file_data)
-            save_path = os.path.join(SAVE_DIR, file.file_name)
+            save_path = os.path.join(SAVE_DIR, id.hex+file.file_name)
             with open(save_path, "wb") as f:
                 f.write(file_bytes)
             saved_files.append(save_path)

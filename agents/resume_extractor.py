@@ -36,6 +36,8 @@ You are an expert data extractor. Extract candidate information from the given t
 - For the 'good_point' field in ai_analysis, include a value only if the text explicitly mentions impactful contributions or achievements; otherwise, set it to null.
 - Ensure all output strictly matches the provided schema without deviations.
 
+
+
 Schema (nested JSON):
 {{
   "personal_info": {{
@@ -83,7 +85,9 @@ Rules:
 - Dates as strings, lists as arrays, booleans as true/false.
 - Do not add extra text, comments, or markdown—only JSON.
 - Use double quotes for all JSON keys and string values.
-
+- dont menshion tools name in skill
+- identify if date menshion for education and work_experience and it look like year-month example 2021-06
+- and phone number also in dose not menshion country code.
 Text:
 {text}
 
