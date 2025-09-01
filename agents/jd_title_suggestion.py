@@ -2,16 +2,15 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 import os
 from dotenv import load_dotenv
-from agents.types import JobDescriptionTitleAISujjest
 from langchain.output_parsers import PydanticOutputParser
 from langchain_google_genai import GoogleGenerativeAI
-from app.models.jd_model import JobTitleAISujjestInput
+from app.models.jd_model import JobTitleAISuggestInput
 load_dotenv()
 
 key = os.getenv("API_KEY")
 model = os.getenv("MODEL")
 
-def title_sujjest(job:JobTitleAISujjestInput):
+def title_suggests(job:JobTitleAISuggestInput):
     job_title_prompt = PromptTemplate(
         input_variables=[
             "title",
@@ -45,7 +44,7 @@ def title_sujjest(job:JobTitleAISujjestInput):
     """
     )
 
-    parser = PydanticOutputParser(pydantic_object=JobDescriptionTitleAISujjest)
+    parser = PydanticOutputParser(pydantic_object=JobDescriptionTitleAISuggest)
 
 
     llm = GoogleGenerativeAI(model=model, google_api_key=key,temperature=0.2,max_output_tokens=10000)

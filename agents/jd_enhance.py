@@ -2,7 +2,7 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 import os
 from dotenv import load_dotenv
-from agents.types import JobDescriptionTitleAISujjest
+from agents.types import JobDescriptionTitleAISuggest
 from langchain.output_parsers import PydanticOutputParser
 from langchain_google_genai import GoogleGenerativeAI
 from agents.types import Enhancecertifications, Enhanceeducation, EnhancekeyResponsibilities, EnhanceniceToHave, EnhancesoftSkills, EnhancetechnicalSkills

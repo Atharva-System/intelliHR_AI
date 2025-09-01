@@ -9,7 +9,7 @@ class JobDescriptionOutline(BaseModel):
     certifications: Optional[List[str]] = Field(None, description="List of certifications (optional)")
     niceToHave: Optional[List[str]] = Field(None, description="List of nice-to-have skills (optional)")
 
-class JobDescriptionTitleAISujjest(BaseModel):
+class JobDescriptionTitleAISuggest(BaseModel):
     title: List[str] = Field(..., description="list of title")
 
 class EnhancekeyResponsibilities(BaseModel):

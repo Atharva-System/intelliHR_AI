@@ -8,7 +8,7 @@ import logging
 
 router = APIRouter()
 
-@router.post("/regenrate-job-field")
+@router.post("/regenerate-job-field")
 def refine_job_field(job: JobRefineInput):
     logging.basicConfig(level=logging.DEBUG)
     job_dict = job.dict()

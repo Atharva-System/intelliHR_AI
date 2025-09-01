@@ -4,7 +4,7 @@ import mimetypes
 import os
 from typing import List
 from fastapi import APIRouter, HTTPException
-from openai import BaseModel
+from pydantic import BaseModel
 from agents.resume_extractor import resume_info
 import logging
 import uuid
