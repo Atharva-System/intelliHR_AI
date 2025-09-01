@@ -29,7 +29,7 @@ def test_generate_job_description():
         assert field in data
         assert isinstance(data[field], list)
 
-def test_AI_titleSujjestion():
+def test_AI_titleSuggestion():
     payload = {
         "title": "DevOps Engineer",
         "experienceRange": "4-6 years",
@@ -70,7 +70,7 @@ def test_AI_titleSujjestion():
         ]
         }
 
-    response = client.post("/generate-AI-titleSujjestion", json=payload)
+    response = client.post("/generate-AI-titleSuggestion", json=payload)
     
     assert response.status_code == 200
     
@@ -87,7 +87,7 @@ def test_refine_job_field_regenerate():
         ]
     }
 
-    response = client.post("/regenrate-job-field", json=payload)
+    response = client.post("/regenerate-job-field", json=payload)
     
     assert response.status_code == 200
     

@@ -8,7 +8,7 @@ class JobInput(BaseModel):
     department: str
     subDepartment: Optional[str] = None
 
-class JobTitleAISujjestInput(BaseModel):
+class JobTitleAISuggestInput(BaseModel):
     title: str
     experienceRange: str
     department: str 
@@ -25,9 +25,9 @@ class JobRefineInput(BaseModel):
     experienceRange: str
     department: str
     subDepartment: Optional[str] = None
-    keyResponsibilities: Optional[List[str]] = None
-    softSkills: Optional[List[str]] = None
-    technicalSkills: Optional[List[str]] = None
-    education: Optional[List[str]] = None
-    certifications: Optional[List[str]] = None
-    niceToHave: Optional[List[str]] = None
+    keyResponsibilities: Optional[str] = None
+    softSkills: Optional[str] = None
+    technicalSkills: Optional[str] = None
+    education: Optional[str] = None
+    certifications: Optional[str] = None
+    niceToHave: Optional[str] = None

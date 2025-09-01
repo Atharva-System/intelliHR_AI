@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from agents.jd_genrator import return_jd
-from agents.jd_title_sujjestion import title_sujjest
-from app.models.jd_model import JobInput,JobTitleAISujjestInput
+from agents.jd_title_suggestion import title_suggesst
+from app.models.jd_model import JobInput,JobTitleAISuggestInput
 import json
 
 router = APIRouter()
@@ -17,7 +17,7 @@ def generate_job_description(job: JobInput):
     )
     return response
 
-@router.post("/generate-AI-titleSujjestion")
-def job_title_sujjestion(job:JobTitleAISujjestInput):
-    response = title_sujjest(job)
+@router.post("/generate-AI-titleSuggestion")
+def job_title_suggestion(job:JobTitleAISuggestInput):
+    response = title_suggesst(job)
     return response
