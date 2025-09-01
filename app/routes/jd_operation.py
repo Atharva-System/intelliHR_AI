@@ -4,6 +4,8 @@ from agents.jd_title_suggestion import title_suggests
 from app.models.jd_model import JobInput, JobTitleAISuggestInput, JobDescriptionResponse, TitleSuggestionResponse
 import json
 import logging
+from app.models.resume_analyze_model import BatchAnalyzeRequest, BatchAnalyzeResponse
+from agents.resume_analyze import resume_score
 
 router = APIRouter()
 
@@ -29,3 +31,14 @@ def job_title_suggestion(job: JobTitleAISuggestInput):
     except Exception as e:
         logging.error(f"Error generating title suggestions: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to generate title suggestions")
+    
+
+@router.post("/ai/batch-analyze", response_model=BatchAnalyzeResponse)
+def analyze_resumes(request: BatchAnalyzeRequest):
+    try:
+        response = resume_score(request)
+        return response
+    except Exception as e:
+        logging.error(f"Error generating title suggestions: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate title suggestions")
+
