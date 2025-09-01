@@ -6,19 +6,19 @@ from langchain.output_parsers import PydanticOutputParser
 from agents.types import CandidateAllInOne
 from app.services.text_extract import pdf_to_text
 import os
+from config.Settings import settings
 from dotenv import load_dotenv
 
 load_dotenv()
 
-key = os.getenv("API_KEY")
-model = os.getenv("MODEL")
-
+key = settings.api_key
+model = settings.model
 llm = GoogleGenerativeAI(
     model=model,
     google_api_key=key,
     temperature=0.2,
     max_output_tokens=8000,
-    
+
 )
 
 parser = PydanticOutputParser(pydantic_object=CandidateAllInOne)

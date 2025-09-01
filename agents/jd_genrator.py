@@ -5,10 +5,12 @@ from dotenv import load_dotenv
 from agents.types import JobDescriptionOutline
 from langchain.output_parsers import PydanticOutputParser
 from langchain_google_genai import GoogleGenerativeAI
+from config.Settings import settings
+
 load_dotenv()
 
-key = os.getenv("API_KEY")
-model = os.getenv("MODEL")
+key = settings.api_key
+model = settings.model
 
 def return_jd(title, experienceRange, department, subDepartment):
     template = """
@@ -51,7 +53,7 @@ def return_jd(title, experienceRange, department, subDepartment):
         "subDepartment": subDepartment or ""
     })
 
-    
+
     if isinstance(raw_output, dict) and "text" in raw_output:
         parsed = raw_output["text"]
     else:

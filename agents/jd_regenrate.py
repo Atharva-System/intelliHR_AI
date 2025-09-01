@@ -5,11 +5,11 @@ from dotenv import load_dotenv
 from langchain.output_parsers import PydanticOutputParser
 from langchain_google_genai import GoogleGenerativeAI
 from agents.types import Enhancecertifications, Enhanceeducation, EnhancekeyResponsibilities, EnhanceniceToHave, EnhancesoftSkills, EnhancetechnicalSkills
-
+from config.Settings import settings
 load_dotenv()
 
-key = os.getenv("API_KEY")
-model = os.getenv("MODEL")
+key = settings.api_key
+model = settings.model
 
 llm = GoogleGenerativeAI(model=model, google_api_key=key, temperature=0.2, max_output_tokens=10000)
 
