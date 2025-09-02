@@ -96,3 +96,12 @@ class BatchAnalyzeResponse(BaseModel):
     total_sourced_candidates: int
     matching_candidates: int
     average_score: int
+
+
+class AIQuestionRequest(BaseModel):
+    jobs: Job
+    candidates: Candidate
+
+
+class AIQuestionResponse(BaseModel):
+    questions: List[str]

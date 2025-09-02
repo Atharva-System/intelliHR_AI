@@ -10,8 +10,10 @@ import logging
 import uuid
 from pathlib import Path
 from config.Settings import settings
-from app.models.resume_analyze_model import BatchAnalyzeRequest, BatchAnalyzeResponse
+from app.models.resume_analyze_model import BatchAnalyzeRequest, BatchAnalyzeResponse,AIQuestionRequest,AIQuestionResponse
 from agents.resume_analyze import resume_score
+from agents.ai_question_genrate import generate_interview_questions
+
 # Configure logger for this module
 logger = logging.getLogger(__name__)
 
@@ -302,5 +304,13 @@ def analyze_resumes(request: BatchAnalyzeRequest):
         response = resume_score(request)
         return response
     except Exception as e:
-        logging.error(f"Error generating title suggestions: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to generate title suggestions")
+        logging.error(f"Error generating ai analyze: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate ai analyze")
+
+@router.post("/generate-ai-question", response_model=AIQuestionResponse)
+def ai_question_generator(request: AIQuestionRequest):
+    try:
+        return generate_interview_questions(request)
+    except Exception as e:
+        logging.error(f"Error generating ai job question: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate ai job question")
