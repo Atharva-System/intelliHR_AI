@@ -10,7 +10,8 @@ import logging
 import uuid
 from pathlib import Path
 from config.Settings import settings
-
+from app.models.resume_analyze_model import BatchAnalyzeRequest, BatchAnalyzeResponse
+from agents.resume_analyze import resume_score
 # Configure logger for this module
 logger = logging.getLogger(__name__)
 
@@ -294,3 +295,12 @@ def parse_resumes(payload: MultipleFiles):
     except Exception as e:
         logger.error(f"Critical error in parse_resumes for request {request_id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@router.post("/ai/batch-analyze", response_model=BatchAnalyzeResponse)
+def analyze_resumes(request: BatchAnalyzeRequest):
+    try:
+        response = resume_score(request)
+        return response
+    except Exception as e:
+        logging.error(f"Error generating title suggestions: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate title suggestions")
