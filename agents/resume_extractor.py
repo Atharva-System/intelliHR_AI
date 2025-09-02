@@ -5,11 +5,7 @@ from langchain_google_genai import GoogleGenerativeAI
 from langchain.output_parsers import PydanticOutputParser
 from agents.types import CandidateAllInOne
 from app.services.text_extract import pdf_to_text
-import os
 from config.Settings import settings
-from dotenv import load_dotenv
-
-load_dotenv()
 
 key = settings.api_key
 model = settings.model

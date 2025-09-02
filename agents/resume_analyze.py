@@ -1,6 +1,4 @@
 import json
-import os
-from dotenv import load_dotenv
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
@@ -17,7 +15,7 @@ from app.models.resume_analyze_model import (
     ExperienceMatch
 )
 from config.Settings import settings
-load_dotenv()
+
 
 key = settings.api_key
 model = settings.model

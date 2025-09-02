@@ -4,7 +4,7 @@ from langchain.prompts import PromptTemplate
 from langchain_google_genai import GoogleGenerativeAI
 from app.models.resume_analyze_model import AIQuestionRequest,AIQuestionResponse
 from config.Settings import settings
-load_dotenv()
+
 
 key = settings.api_key
 model = settings.model

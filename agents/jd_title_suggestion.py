@@ -1,13 +1,10 @@
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-import os
-from dotenv import load_dotenv
 from langchain.output_parsers import PydanticOutputParser
 from langchain_google_genai import GoogleGenerativeAI
 from agents.types import JobDescriptionTitleAISuggest
 from app.models.jd_model import JobTitleAISuggestInput
 from config.Settings import settings
-load_dotenv()
 
 key = settings.api_key
 model = settings.model
