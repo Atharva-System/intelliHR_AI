@@ -33,12 +33,4 @@ def job_title_suggestion(job: JobTitleAISuggestInput):
         raise HTTPException(status_code=500, detail="Failed to generate title suggestions")
     
 
-@router.post("/ai/batch-analyze", response_model=BatchAnalyzeResponse)
-def analyze_resumes(request: BatchAnalyzeRequest):
-    try:
-        response = resume_score(request)
-        return response
-    except Exception as e:
-        logging.error(f"Error generating title suggestions: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to generate title suggestions")
 
