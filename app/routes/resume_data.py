@@ -12,7 +12,7 @@ from pathlib import Path
 from config.Settings import settings
 from app.models.resume_analyze_model import BatchAnalyzeRequest, BatchAnalyzeResponse,AIQuestionRequest,AIQuestionResponse
 from agents.resume_analyze import resume_score
-from agents.ai_question_genrate import generate_interview_questions
+from agents.ai_question_generate import generate_interview_questions
 
 # Configure logger for this module
 logger = logging.getLogger(__name__)
