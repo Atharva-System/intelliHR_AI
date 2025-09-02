@@ -101,13 +101,13 @@ Run the container for the chosen environment:
 
 ```sh
 # Development
-docker run -p 2001:2001 intellihr-ai-dev
+docker run -p 9090:2001 intellihr-ai-dev
 
 # Staging
-docker run -p 2001:2001 intellihr-ai-stage
+docker run -p 9090:2001 intellihr-ai-stage
 
 # Production
-docker run -p 2001:2001 intellihr-ai-prod
+docker run -p 9090:2001 intellihr-ai-prod
 ```
 
 ## Notes
