@@ -1,13 +1,7 @@
 import json
-import os
-from dotenv import load_dotenv
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain.output_parsers import PydanticOutputParser
 from langchain_google_genai import GoogleGenerativeAI
-
-from app.models.jd_model import JobTitleAISuggestInput
-from app.services.text_extract import pdf_to_text
 from app.models.resume_analyze_model import AIQuestionRequest,AIQuestionResponse
 from config.Settings import settings
 load_dotenv()
@@ -65,7 +59,7 @@ def generate_interview_questions(request: AIQuestionRequest) -> AIQuestionRespon
     try:
         questions = json.loads(output_text)
     except Exception as e:
-        raise ValueError(f"Failed to parse LLM output as JSON list: {e}\nOutput was: {output_text}")
+        raise ValueError(f"Failed to parse LLM output as JSON list:{e}")
 
    
     return AIQuestionResponse(questions=questions)
