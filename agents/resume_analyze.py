@@ -1,4 +1,5 @@
 import json
+from typing import List
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
@@ -21,7 +22,10 @@ key = settings.api_key
 model = settings.model
 
 
-def resume_score(request: BatchAnalyzeRequest) -> BatchAnalyzeResponse:
+from datetime import datetime
+
+
+def resume_score(request: BatchAnalyzeRequest) -> List[BatchAnalyzeResponse]:
     """
     Takes a BatchAnalyzeRequest (jobs + candidates) and returns a BatchAnalyzeResponse.
     Uses LLM to evaluate each candidate against each job.
@@ -63,9 +67,10 @@ def resume_score(request: BatchAnalyzeRequest) -> BatchAnalyzeResponse:
 
     chain = LLMChain(llm=llm, prompt=prompt)
 
-    analyzed_candidates = []
+    results: List[BatchAnalyzeResponse] = []
 
     for job in request.jobs:
+        analyzed_candidates: list[AnalyzedCandidate] = []
         for candidate in request.candidates:
 
             
@@ -112,19 +117,18 @@ def resume_score(request: BatchAnalyzeRequest) -> BatchAnalyzeResponse:
                 experience_level=candidate.experience_level,
                 primary_domain=candidate.parsed_data.ai_analysis.primary_domain if candidate.parsed_data.ai_analysis else "",
                 application_status=candidate.application_status,
-                analyzed_at="2025-09-01T12:00:00Z"
+                analyzed_at=datetime.utcnow()
             ))
 
-        
         response_obj = BatchAnalyzeResponse(
             job_id=job.job_id,
             job_title=job.title,
             candidates=analyzed_candidates,
-            analyzed_at="2025-09-01T12:00:00Z",
-            analysis_version=1,
+            analyzed_at=datetime.utcnow(),
             total_sourced_candidates=len(request.candidates),
             matching_candidates=len([c for c in analyzed_candidates if c.ai_score >= request.options.minimum_score]),
             average_score=int(sum(c.ai_score for c in analyzed_candidates) / len(analyzed_candidates)) if analyzed_candidates else 0
         )
+        results.append(response_obj)
 
-        return response_obj
+    return results

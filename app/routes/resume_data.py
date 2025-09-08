@@ -359,7 +359,7 @@ def parse_resumes(payload: MultipleFiles):
         logger.error(f"Critical error in parse_resumes for request {request_id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-@router.post("/ai/batch-analyze", response_model=BatchAnalyzeResponse)
+@router.post("/ai/batch-analyze", response_model=List[BatchAnalyzeResponse])
 def analyze_resumes(request: BatchAnalyzeRequest):
     try:
         response = resume_score(request)
