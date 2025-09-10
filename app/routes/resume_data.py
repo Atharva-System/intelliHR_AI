@@ -75,7 +75,9 @@ def setup_save_directory() -> None:
 
 def validate_file_type(file_name: str) -> bool:
     """
-    Validate if file type is allowed.
+    Validate if file type is allowed using filename extension as a hint.
+
+    This is a fallback when we cannot inspect file bytes.
 
     Args:
         file_name: Name of the file to validate
@@ -85,6 +87,50 @@ def validate_file_type(file_name: str) -> bool:
     """
     mime_type, _ = mimetypes.guess_type(file_name)
     return mime_type in ALLOWED_MIME_TYPES
+
+
+def detect_file_type_from_bytes(file_bytes: bytes) -> str:
+    """
+    Detect file type from magic bytes.
+
+    Returns one of: 'application/pdf', 'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', or ''.
+    """
+    if not file_bytes or len(file_bytes) < 8:
+        return ""
+
+    # PDF: %PDF- (25 50 44 46 2D)
+    if file_bytes.startswith(b"%PDF-"):
+        return "application/pdf"
+
+    # DOC (legacy): starts with D0 CF 11 E0 A1 B1 1A E1 (OLE Compound File)
+    if file_bytes[:8] == b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1":
+        return "application/msword"
+
+    # DOCX: ZIP file with specific entries; quick heuristic checks for PK header
+    if file_bytes[:2] == b"PK":
+        # For speed/safety, we rely on PK header as a strong signal of OOXML
+        # Actual strict check would inspect zip central directory entries
+        return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+    return ""
+
+
+def ensure_filename_extension(file_name: str, detected_mime: str) -> str:
+    """
+    Append an appropriate extension if the provided filename lacks one.
+    """
+    base, ext = os.path.splitext(file_name)
+    if ext:
+        return file_name
+
+    if detected_mime == "application/pdf":
+        return f"{base}.pdf"
+    if detected_mime == "application/msword":
+        return f"{base}.doc"
+    if detected_mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        return f"{base}.docx"
+    return file_name
 
 def decode_and_validate_file(file_data: str, file_name: str) -> bytes:
     """
@@ -222,18 +268,7 @@ def parse_resumes(payload: MultipleFiles):
             temp_file_path = None
 
             try:
-                # Validate file type
-                if not validate_file_type(file_name):
-                    logger.warning(f"Invalid file type for {file_name}")
-                    extracted_data.append({
-                        "file_name": file_name,
-                        "status": "error",
-                        "error": "Invalid file type. Only PDF or DOC/DOCX files are allowed."
-                    })
-                    failed_extractions += 1
-                    continue
-
-                # Decode and validate file
+                # Decode and validate bytes first
                 try:
                     file_bytes = decode_and_validate_file(file.file_data, file_name)
                 except ValueError as ve:
@@ -246,9 +281,35 @@ def parse_resumes(payload: MultipleFiles):
                     failed_extractions += 1
                     continue
 
+                # Detect type from bytes; fall back to extension-based validation
+                detected_mime = detect_file_type_from_bytes(file_bytes)
+                effective_file_name = ensure_filename_extension(file_name, detected_mime)
+
+                if detected_mime:
+                    if detected_mime not in ALLOWED_MIME_TYPES:
+                        logger.warning(f"Invalid file type for {file_name} (detected {detected_mime})")
+                        extracted_data.append({
+                            "file_name": file_name,
+                            "status": "error",
+                            "error": "Invalid file type. Only PDF or DOC/DOCX files are allowed."
+                        })
+                        failed_extractions += 1
+                        continue
+                else:
+                    # No magic match; use filename-based check as a fallback
+                    if not validate_file_type(effective_file_name):
+                        logger.warning(f"Invalid file type for {file_name} (no magic match)")
+                        extracted_data.append({
+                            "file_name": file_name,
+                            "status": "error",
+                            "error": "Invalid file type. Only PDF or DOC/DOCX files are allowed."
+                        })
+                        failed_extractions += 1
+                        continue
+
                 # Save file temporarily
                 try:
-                    temp_file_path = save_file_temporarily(file_bytes, file_name, request_id)
+                    temp_file_path = save_file_temporarily(file_bytes, effective_file_name, request_id)
                 except OSError as oe:
                     logger.error(f"File save failed for {file_name}: {str(oe)}")
                     extracted_data.append({
@@ -298,7 +359,7 @@ def parse_resumes(payload: MultipleFiles):
         logger.error(f"Critical error in parse_resumes for request {request_id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-@router.post("/ai/batch-analyze", response_model=BatchAnalyzeResponse)
+@router.post("/ai/batch-analyze", response_model=List[BatchAnalyzeResponse])
 def analyze_resumes(request: BatchAnalyzeRequest):
     try:
         response = resume_score(request)
