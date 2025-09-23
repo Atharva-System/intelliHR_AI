@@ -10,11 +10,17 @@ import logging
 import uuid
 from pathlib import Path
 from config.Settings import settings
-from app.models.resume_analyze_model import BatchAnalyzeRequest, BatchAnalyzeResponse,AIQuestionRequest,AIQuestionResponse
-from agents.resume_analyze import resume_score
+from app.models.resume_analyze_model import (
+    BatchAnalyzeRequest, 
+    BatchAnalyzeResponse, 
+    AIQuestionRequest, 
+    AIQuestionResponse,
+    BatchAnalyzeResumeRequest, 
+    AnalyzedCandidateResponse
+)
+from agents.resume_analyze import resume_score, resume_score_from_base64
 from agents.ai_question_generate import generate_interview_questions
 
-# Configure logger for this module
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -27,7 +33,6 @@ class FilePayload(BaseModel):
     def validate_file_name(cls, v):
         if not v or not v.strip():
             raise ValueError('File name cannot be empty')
-        # Sanitize file name
         return "".join(c for c in v if c.isalnum() or c in ('.', '_', '-'))
 
     @validator('file_data')
@@ -35,7 +40,6 @@ class FilePayload(BaseModel):
         if not v or not v.strip():
             raise ValueError('File data cannot be empty')
         try:
-            # Test if it's valid base64
             base64.b64decode(v, validate=True)
         except Exception:
             raise ValueError('Invalid base64 file data')
@@ -59,13 +63,11 @@ class ResumeExtractionResponse(BaseModel):
     failed_extractions: int
     extracted_data: List[Dict[str, Any]]
 
-# Configuration
 SAVE_DIR = settings.save_directory
 ALLOWED_MIME_TYPES = settings.allowed_mime_types
 MAX_FILE_SIZE = settings.max_file_size
 
 def setup_save_directory() -> None:
-    """Create save directory if it doesn't exist."""
     try:
         SAVE_DIR.mkdir(exist_ok=True)
         logger.debug(f"Save directory ensured: {SAVE_DIR}")
@@ -74,52 +76,25 @@ def setup_save_directory() -> None:
         raise HTTPException(status_code=500, detail="Failed to setup file storage")
 
 def validate_file_type(file_name: str) -> bool:
-    """
-    Validate if file type is allowed using filename extension as a hint.
-
-    This is a fallback when we cannot inspect file bytes.
-
-    Args:
-        file_name: Name of the file to validate
-
-    Returns:
-        bool: True if file type is allowed, False otherwise
-    """
     mime_type, _ = mimetypes.guess_type(file_name)
     return mime_type in ALLOWED_MIME_TYPES
 
-
 def detect_file_type_from_bytes(file_bytes: bytes) -> str:
-    """
-    Detect file type from magic bytes.
-
-    Returns one of: 'application/pdf', 'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', or ''.
-    """
     if not file_bytes or len(file_bytes) < 8:
         return ""
 
-    # PDF: %PDF- (25 50 44 46 2D)
     if file_bytes.startswith(b"%PDF-"):
         return "application/pdf"
 
-    # DOC (legacy): starts with D0 CF 11 E0 A1 B1 1A E1 (OLE Compound File)
     if file_bytes[:8] == b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1":
         return "application/msword"
 
-    # DOCX: ZIP file with specific entries; quick heuristic checks for PK header
     if file_bytes[:2] == b"PK":
-        # For speed/safety, we rely on PK header as a strong signal of OOXML
-        # Actual strict check would inspect zip central directory entries
         return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
     return ""
 
-
 def ensure_filename_extension(file_name: str, detected_mime: str) -> str:
-    """
-    Append an appropriate extension if the provided filename lacks one.
-    """
     base, ext = os.path.splitext(file_name)
     if ext:
         return file_name
@@ -133,19 +108,6 @@ def ensure_filename_extension(file_name: str, detected_mime: str) -> str:
     return file_name
 
 def decode_and_validate_file(file_data: str, file_name: str) -> bytes:
-    """
-    Decode base64 file data and validate size.
-
-    Args:
-        file_data: Base64 encoded file data
-        file_name: Name of the file for logging
-
-    Returns:
-        bytes: Decoded file bytes
-
-    Raises:
-        ValueError: If file is too large or invalid
-    """
     try:
         file_bytes = base64.b64decode(file_data)
 
@@ -163,22 +125,7 @@ def decode_and_validate_file(file_data: str, file_name: str) -> bytes:
         raise ValueError(f"Invalid base64 encoding for file {file_name}")
 
 def save_file_temporarily(file_bytes: bytes, file_name: str, request_id: str) -> Path:
-    """
-    Save file temporarily for processing.
-
-    Args:
-        file_bytes: File content as bytes
-        file_name: Original file name
-        request_id: Unique request identifier
-
-    Returns:
-        Path: Path to saved file
-
-    Raises:
-        OSError: If file cannot be saved
-    """
     try:
-        # Create unique filename to avoid conflicts
         unique_filename = f"{request_id}_{file_name}"
         save_path = SAVE_DIR / unique_filename
 
@@ -193,16 +140,6 @@ def save_file_temporarily(file_bytes: bytes, file_name: str, request_id: str) ->
         raise OSError(f"Failed to save file {file_name}: {str(e)}")
 
 def extract_resume_data(file_path: Path, file_name: str) -> Dict[str, Any]:
-    """
-    Extract data from resume file.
-
-    Args:
-        file_path: Path to the resume file
-        file_name: Original file name for logging
-
-    Returns:
-        Dict[str, Any]: Extracted resume data or error info
-    """
     try:
         logger.info(f"Starting resume extraction for file: {file_name}")
         resume_data = resume_info(str(file_path))
@@ -223,13 +160,6 @@ def extract_resume_data(file_path: Path, file_name: str) -> Dict[str, Any]:
         }
 
 def cleanup_file(file_path: Path, file_name: str) -> None:
-    """
-    Clean up temporary file.
-
-    Args:
-        file_path: Path to file to be cleaned up
-        file_name: File name for logging
-    """
     try:
         if file_path and file_path.exists():
             file_path.unlink()
@@ -239,18 +169,6 @@ def cleanup_file(file_path: Path, file_name: str) -> None:
 
 @router.post("/parse-cv", response_model=ResumeExtractionResponse)
 def parse_resumes(payload: MultipleFiles):
-    """
-    Parse multiple resume files and extract information.
-
-    Args:
-        payload: MultipleFiles containing list of files to process
-
-    Returns:
-        ResumeExtractionResponse: Processing results and extracted data
-
-    Raises:
-        HTTPException: If setup fails or processing encounters critical errors
-    """
     request_id = uuid.uuid4().hex
     logger.info(f"Starting resume parsing request {request_id} with {len(payload.files)} files")
 
@@ -268,7 +186,6 @@ def parse_resumes(payload: MultipleFiles):
             temp_file_path = None
 
             try:
-                # Decode and validate bytes first
                 try:
                     file_bytes = decode_and_validate_file(file.file_data, file_name)
                 except ValueError as ve:
@@ -281,7 +198,6 @@ def parse_resumes(payload: MultipleFiles):
                     failed_extractions += 1
                     continue
 
-                # Detect type from bytes; fall back to extension-based validation
                 detected_mime = detect_file_type_from_bytes(file_bytes)
                 effective_file_name = ensure_filename_extension(file_name, detected_mime)
 
@@ -296,7 +212,6 @@ def parse_resumes(payload: MultipleFiles):
                         failed_extractions += 1
                         continue
                 else:
-                    # No magic match; use filename-based check as a fallback
                     if not validate_file_type(effective_file_name):
                         logger.warning(f"Invalid file type for {file_name} (no magic match)")
                         extracted_data.append({
@@ -307,7 +222,6 @@ def parse_resumes(payload: MultipleFiles):
                         failed_extractions += 1
                         continue
 
-                # Save file temporarily
                 try:
                     temp_file_path = save_file_temporarily(file_bytes, effective_file_name, request_id)
                 except OSError as oe:
@@ -320,7 +234,6 @@ def parse_resumes(payload: MultipleFiles):
                     failed_extractions += 1
                     continue
 
-                # Extract resume data
                 result = extract_resume_data(temp_file_path, file_name)
                 extracted_data.append(result)
 
@@ -339,7 +252,6 @@ def parse_resumes(payload: MultipleFiles):
                 failed_extractions += 1
 
             finally:
-                # Always cleanup temporary file
                 if temp_file_path:
                     cleanup_file(temp_file_path, file_name)
 
@@ -359,14 +271,23 @@ def parse_resumes(payload: MultipleFiles):
         logger.error(f"Critical error in parse_resumes for request {request_id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-@router.post("/ai/batch-analyze", response_model=List[BatchAnalyzeResponse])
-def analyze_resumes(request: BatchAnalyzeRequest):
+@router.post("/ai/batch-analyze-resumes", response_model=List[AnalyzedCandidateResponse])
+def analyze_resumes_from_base64(request: BatchAnalyzeResumeRequest):
     try:
-        response = resume_score(request)
+        response = resume_score_from_base64(request)
         return response
     except Exception as e:
-        logging.error(f"Error generating ai analyze: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to generate ai analyze")
+        logging.error(f"Error generating AI analysis from resumes: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate AI analysis")
+
+# @router.post("/ai/batch-analyze", response_model=List[BatchAnalyzeResponse])
+# def analyze_resumes(request: BatchAnalyzeRequest):
+#     try:
+#         response = resume_score(request)
+#         return response
+#     except Exception as e:
+#         logging.error(f"Error generating ai analyze: {str(e)}")
+#         raise HTTPException(status_code=500, detail="Failed to generate ai analyze")
 
 @router.post("/generate-ai-question", response_model=AIQuestionResponse)
 def ai_question_generator(request: AIQuestionRequest):
