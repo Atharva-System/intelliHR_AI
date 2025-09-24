@@ -40,9 +40,15 @@ class FilePayload(BaseModel):
         if not v or not v.strip():
             raise ValueError('File data cannot be empty')
         try:
-            base64.b64decode(v, validate=True)
-        except Exception:
-            raise ValueError('Invalid base64 file data')
+            # Remove data URI prefix if present
+            file_data = v.split(",", 1)[-1] if v.startswith("data:") else v
+            # Check for valid base64 characters
+            import re
+            if not re.match(r'^[A-Za-z0-9+/=]+$', file_data):
+                raise ValueError('Invalid base64 characters')
+            base64.b64decode(file_data, validate=True)
+        except Exception as e:
+            raise ValueError(f'Invalid base64 file data: {str(e)}')
         return v
 
 class MultipleFiles(BaseModel):
@@ -109,7 +115,14 @@ def ensure_filename_extension(file_name: str, detected_mime: str) -> str:
 
 def decode_and_validate_file(file_data: str, file_name: str) -> bytes:
     try:
-        file_bytes = base64.b64decode(file_data)
+        # Remove data URI prefix if present
+        file_data = file_data.split(",", 1)[-1] if file_data.startswith("data:") else file_data
+        # Check for valid base64 characters
+        import re
+        if not re.match(r'^[A-Za-z0-9+/=]+$', file_data):
+            raise ValueError(f"File {file_name} contains invalid base64 characters")
+
+        file_bytes = base64.b64decode(file_data, validate=True)
 
         if len(file_bytes) > MAX_FILE_SIZE:
             raise ValueError(f"File {file_name} exceeds maximum size limit ({MAX_FILE_SIZE} bytes)")
@@ -122,7 +135,10 @@ def decode_and_validate_file(file_data: str, file_name: str) -> bytes:
 
     except base64.binascii.Error as e:
         logger.error(f"Base64 decode error for file {file_name}: {str(e)}")
-        raise ValueError(f"Invalid base64 encoding for file {file_name}")
+        raise ValueError(f"Invalid base64 encoding for file {file_name}: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error decoding file {file_name}: {str(e)}")
+        raise ValueError(f"Failed to decode file {file_name}: {str(e)}")
 
 def save_file_temporarily(file_bytes: bytes, file_name: str, request_id: str) -> Path:
     try:
@@ -274,25 +290,19 @@ def parse_resumes(payload: MultipleFiles):
 @router.post("/ai/batch-analyze-resumes", response_model=List[AnalyzedCandidateResponse])
 def analyze_resumes_from_base64(request: BatchAnalyzeResumeRequest):
     try:
+        logger.info(f"Received batch analyze request with {len(request.candidates)} candidates")
+        for candidate in request.candidates:
+            logger.debug(f"Candidate {candidate.candidate_id}: Base64 length = {len(candidate.resumeBase64)}")
         response = resume_score_from_base64(request)
         return response
     except Exception as e:
-        logging.error(f"Error generating AI analysis from resumes: {str(e)}")
+        logger.error(f"Error generating AI analysis from resumes: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to generate AI analysis")
-
-# @router.post("/ai/batch-analyze", response_model=List[BatchAnalyzeResponse])
-# def analyze_resumes(request: BatchAnalyzeRequest):
-#     try:
-#         response = resume_score(request)
-#         return response
-#     except Exception as e:
-#         logging.error(f"Error generating ai analyze: {str(e)}")
-#         raise HTTPException(status_code=500, detail="Failed to generate ai analyze")
 
 @router.post("/generate-ai-question", response_model=AIQuestionResponse)
 def ai_question_generator(request: AIQuestionRequest):
     try:
         return generate_interview_questions(request)
     except Exception as e:
-        logging.error(f"Error generating ai job question: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to generate ai job question")
+        logger.error(f"Error generating AI job question: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate AI job question")

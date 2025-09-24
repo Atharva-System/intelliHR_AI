@@ -7,6 +7,7 @@ from langchain_google_genai import GoogleGenerativeAI
 import base64
 import tempfile
 import os
+import re
 
 from pydantic import BaseModel
 
@@ -34,11 +35,44 @@ from datetime import datetime
 key = settings.api_key
 model = settings.model
 
+def detect_file_type_from_bytes(file_bytes: bytes) -> str:
+    if not file_bytes or len(file_bytes) < 8:
+        return ""
+
+    if file_bytes.startswith(b"%PDF-"):
+        return "application/pdf"
+
+    if file_bytes[:8] == b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1":
+        return "application/msword"
+
+    if file_bytes[:2] == b"PK":
+        return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+    return ""
+
 def extract_resume_from_base64(resume_base64: str, candidate_id: str) -> dict:
     try:
-        resume_data = base64.b64decode(resume_base64)
+        # Remove data URI prefix if present
+        resume_base64 = resume_base64.split(",", 1)[-1] if resume_base64.startswith("data:") else resume_base64
+        # Check for valid base64 characters
+        if not re.match(r'^[A-Za-z0-9+/=]+$', resume_base64):
+            raise ValueError(f"Invalid base64 characters for candidate {candidate_id}")
+
+        resume_data = base64.b64decode(resume_base64, validate=True)
         
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+        # Detect file type
+        detected_mime = detect_file_type_from_bytes(resume_data)
+        if detected_mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            suffix = '.docx'
+        elif detected_mime == "application/msword":
+            suffix = '.doc'
+        elif detected_mime == "application/pdf":
+            suffix = '.pdf'
+        else:
+            raise ValueError(f"Unsupported file type for candidate {candidate_id}: {detected_mime}")
+
+        # Create temporary file with appropriate suffix
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
             temp_file.write(resume_data)
             temp_file_path = temp_file.name
         
@@ -48,6 +82,9 @@ def extract_resume_from_base64(resume_base64: str, candidate_id: str) -> dict:
         finally:
             os.unlink(temp_file_path)
             
+    except base64.binascii.Error as e:
+        print(f"Error decoding base64 for candidate {candidate_id}: {str(e)}")
+        return {}
     except Exception as e:
         print(f"Error extracting resume for candidate {candidate_id}: {str(e)}")
         return {}
