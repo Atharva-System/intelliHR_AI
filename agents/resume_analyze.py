@@ -81,7 +81,6 @@ def resume_score_from_base64(request: BatchAnalyzeResumeRequest) -> List[Analyze
 
         Job Requirement:
         Title: {job_title}
-        Department: {department}
         Experience Level: {experience_level}
         Description: {job_description}
         Technical Skills Required: {technical_skills}
@@ -111,7 +110,7 @@ def resume_score_from_base64(request: BatchAnalyzeResumeRequest) -> List[Analyze
         - Skill gaps: Missing required skills
         - Recommendation: "highly-recommended", "recommended", "consider", "not-recommended"
         """,
-        input_variables=["job_title", "department", "experience_level", "job_description", 
+        input_variables=["job_title", "experience_level", "job_description", 
                         "technical_skills", "responsibilities", "soft_skills", "resume_data"],
         partial_variables={"format_instructions": parser.get_format_instructions()},
     )
@@ -134,7 +133,6 @@ def resume_score_from_base64(request: BatchAnalyzeResumeRequest) -> List[Analyze
 
             response = chain.invoke({
                 "job_title": request.jobs.title,
-                "department": request.jobs.department,
                 "experience_level": request.jobs.experience_level,
                 "job_description": request.jobs.description,
                 "technical_skills": ", ".join(request.jobs.technical_skills),

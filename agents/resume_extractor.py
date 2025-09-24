@@ -25,7 +25,7 @@ prompt = PromptTemplate(
 You are an expert information extractor. Extract candidate details from the given text and return a JSON object that strictly matches the CandidateAllInOne schema below.
 
 ### Extraction Rules:
-1. For **all fields except `ai_analysis`**, extract only information explicitly present in the text.
+1. For **all fields except `ai_analysis` and `tags`**, extract only information explicitly present in the text.
 2. Do not infer, assume, or generate missing data for non-AI-analysis fields.
 3. If a value is not provided in the text (except AI analysis), set it to null.
 4. Output must be strictly valid JSON (double quotes, arrays for lists, booleans lowercase).
@@ -37,6 +37,11 @@ You are an expert information extractor. Extract candidate details from the give
 ### AI Analysis Extraction:
 - For `ai_analysis`, you may provide insights based on the candidate's text even if not explicitly stated.
 - This section can include inferred experience level, primary domain, key strengths, career progression score, skill diversity score, and good_point if apparent.
+
+### Tags:
+- Create 4–5 short tags (strings) based on user info.
+- Tags should summarize candidate at a glance (e.g., "Full Stack Developer", "5+ Years Experience", "AI/ML Specialist", "Strong Leadership").
+- Tags should reflect either explicit info or clear AI analysis inference.
 
 ### Schema:
 {{
@@ -76,7 +81,8 @@ You are an expert information extractor. Extract candidate details from the give
     "career_progression_score": int | null,
     "skill_diversity_score": int | null,
     "good_point": string | null
-  }} | null
+  }} | null,
+  "tags": [string] | null
 }}
 
 ### Input Text:
@@ -86,6 +92,7 @@ You are an expert information extractor. Extract candidate details from the give
 Return only the JSON object.
 """
 )
+
 
 candidate_extraction_chain = LLMChain(
     llm=llm,

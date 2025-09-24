@@ -6,7 +6,6 @@ class JobRequirement(BaseModel):
     job_id: str
     title: str
     description: str
-    department: str
     experience_level: str
     technical_skills: List[str]
     responsibilities: List[str] = []

@@ -75,6 +75,7 @@ class CandidateAllInOne(BaseModel):
     education: Optional[List[Education]] = None
     skills: Optional[Skills] = None
     ai_analysis: Optional[AIAnalysis] = None
+    tags: list[str]
 
 
 class AskAI(BaseModel):
