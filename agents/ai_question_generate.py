@@ -5,32 +5,10 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_google_genai import GoogleGenerativeAI
 import json
-from app.models.resume_analyze_model import AIQuestionRequest
+from app.models.resume_analyze_model import AIQuestionRequest,AIQuestionResponse
 from config.Settings import settings
 
-class ExperienceMatch(BaseModel):
-    years_requirement_met: bool
-    experience_level_fit: str
 
-class SkillMatch(BaseModel):
-    matched_skills: List[str]
-    missing_skills: List[str]
-    skill_gap_percentage: int
-
-class Summary(BaseModel):
-    experience_match: ExperienceMatch
-    overall_match: str
-    skill_match: SkillMatch
-
-class Advice(BaseModel):
-    interview_focus_areas: List[str]
-    next_steps: List[str]
-    questions_to_ask: List[str]
-
-class AIQuestionResponse(BaseModel):
-    ai_score: int
-    summary: Summary
-    advice: Advice
 
 def generate_interview_questions(request: AIQuestionRequest) -> AIQuestionResponse:
     llm = GoogleGenerativeAI(

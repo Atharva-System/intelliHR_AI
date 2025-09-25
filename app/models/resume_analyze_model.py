@@ -148,10 +148,28 @@ class BatchAnalyzeResponse(BaseModel):
     total_sourced_candidates: int
     matching_candidates: int
     average_score: int
+    
+class JobAiQuestion(BaseModel):
+    job_id: str
+    title: str
+    description: str
+    department: str
+    experience_level: str
+    technical_skills: List[str]
+    responsibilities: List[str]
+    softSkills: List[str]
+    qualification: List[str]
+
+
+class CandidateAiQuestion(BaseModel):
+    candidateId: str
+    experience_level: str
+    technical_skills: List[str]
+    softSkills: List[str]
 
 class AIQuestionRequest(BaseModel):
-    jobs: Job
-    candidates: Candidate
+    jobs: JobAiQuestion
+    candidates: CandidateAiQuestion
 
 class ExperienceMatch(BaseModel):
     years_requirement_met: bool
