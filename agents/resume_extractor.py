@@ -31,8 +31,9 @@ You are an expert information extractor. Extract candidate details from the give
 4. Output must be strictly valid JSON (double quotes, arrays for lists, booleans lowercase).
 5. Dates should follow the format "YYYY-MM" if mentioned.
 6. Phone numbers should be digits only (no spaces, country codes, or special characters).
-7. Skills must not include tool names unless explicitly listed.
-8. Do not add extra text, explanations, or comments—return JSON only.
+7. **All technologies mentioned anywhere in the text should be listed in `technical_skills`.** Do not include a `technologies` field under work experience.
+8. Skills must not include tool names unless explicitly listed.
+9. Do not add extra text, explanations, or comments—return JSON only.
 
 ### AI Analysis Extraction:
 - For `ai_analysis`, you may provide insights based on the candidate's text even if not explicitly stated.
@@ -64,8 +65,7 @@ You are an expert information extractor. Extract candidate details from the give
       "position": string | null,
       "start_date": string | null,
       "end_date": string | null,
-      "is_current": boolean | null,
-      "technologies": [string] | null
+      "is_current": boolean | null
     }}
   ] | null,
   "education": [

@@ -44,7 +44,6 @@ class WorkExperience(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     is_current: Optional[bool] = None
-    technologies: Optional[List[str]] = None
 
 
 class Education(BaseModel):
