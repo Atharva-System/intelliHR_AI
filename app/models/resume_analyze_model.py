@@ -153,5 +153,26 @@ class AIQuestionRequest(BaseModel):
     jobs: Job
     candidates: Candidate
 
+class ExperienceMatch(BaseModel):
+    years_requirement_met: bool
+    experience_level_fit: str
+
+class SkillMatch(BaseModel):
+    matched_skills: List[str]
+    missing_skills: List[str]
+    skill_gap_percentage: int
+
+class Summary(BaseModel):
+    experience_match: ExperienceMatch
+    overall_match: str
+    skill_match: SkillMatch
+
+class Advice(BaseModel):
+    interview_focus_areas: List[str]
+    next_steps: List[str]
+    questions_to_ask: List[str]
+
 class AIQuestionResponse(BaseModel):
-    questions: List[str]
+    ai_score: int
+    summary: Summary
+    advice: Advice
