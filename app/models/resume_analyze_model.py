@@ -19,6 +19,7 @@ class CandidateResume(BaseModel):
 class BatchAnalyzeResumeRequest(BaseModel):
     jobs: JobRequirement
     candidates: List[CandidateResume]
+    threshold: int
 
 class SkillDetail(BaseModel):
     name: str

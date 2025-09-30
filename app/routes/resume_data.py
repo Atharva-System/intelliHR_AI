@@ -294,10 +294,15 @@ def analyze_resumes_from_base64(request: BatchAnalyzeResumeRequest):
         for candidate in request.candidates:
             logger.debug(f"Candidate {candidate.candidate_id}: Base64 length = {len(candidate.resumeBase64)}")
         response = resume_score_from_base64(request)
-        return response
+        filtered_response = [
+            candidate for candidate in response
+            if candidate.matchScore >= request.threshold
+        ]
+        return filtered_response
     except Exception as e:
         logger.error(f"Error generating AI analysis from resumes: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to generate AI analysis")
+
 
 @router.post("/generate-ai-question", response_model=AIQuestionResponse)
 def ai_question_generator(request: AIQuestionRequest):
