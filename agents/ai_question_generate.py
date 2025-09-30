@@ -1,18 +1,19 @@
-import json
+import re
+from pydantic import BaseModel
+from typing import List, Dict
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_google_genai import GoogleGenerativeAI
+import json
 from app.models.resume_analyze_model import AIQuestionRequest,AIQuestionResponse
 from config.Settings import settings
 
 
-key = settings.api_key
-model = settings.model
 
 def generate_interview_questions(request: AIQuestionRequest) -> AIQuestionResponse:
     llm = GoogleGenerativeAI(
-        model=model,
-        google_api_key=key,
+        model=settings.model,
+        google_api_key=settings.api_key,
         temperature=0.2,
         max_output_tokens=5000
     )
@@ -20,28 +21,50 @@ def generate_interview_questions(request: AIQuestionRequest) -> AIQuestionRespon
     prompt = """
     You are a professional recruiter.
 
-    Based on the job requirements and the candidate's resume, generate **100 to 200** relevant interview questions tailored to assess the candidate's fit for the role.
+    Based on the job requirements and the candidate's resume, generate a comprehensive analysis including an AI score, summary, and advice for the interview process.
 
     Instructions:
-    1. Start with **10 HR-related questions** that are strictly non-technical. 
-    2. Then generate **90 to 190 technical questions** (basic → intermediate → advanced).
-    3. Prefix:
-       - (HR) for HR questions
-       - (Technical-technology-basic) for basic
-       - (Technical-technology-intermediate) for intermediate
-       - (Technical-technology-advanced) for advanced
+    1. Provide an **ai_score** (0-100) reflecting the candidate's overall fit for the role.
+    2. Include a **summary** with:
+    - **experience_match**: 
+        - `years_requirement_met` (boolean): Whether the candidate meets the required years of experience.
+        - `experience_level_fit` (string): "under", "match", or "over" based on experience alignment.
+    - **overall_match**: A brief description of the candidate's fit for the role and company culture.
+    - **skill_match**:
+        - `matched_skills`: List of skills the candidate possesses that match the job requirements.
+        - `missing_skills`: List of required skills the candidate lacks.
+        - `skill_gap_percentage`: Percentage of required skills the candidate lacks (0-100).
+    3. Include **advice** with:
+    - **interview_focus_areas**: List of 4-6 key areas to focus on during the interview.
+    - **next_steps**: List of 2-4 recommended next steps for the hiring process.
+    - **questions_to_ask**: List of 50-100 tailored interview questions (mix of HR and technical, labeled as (HR) or (Technical-<technology>-<level>)).
 
     Format:
-    Respond with a **JSON list of strings only**, e.g.:
-    [
-      "(HR) What motivates you in your work?",
-      "(Technical-SQL-basic) What is a primary key?"
-    ]
-    Return a **raw JSON array only**, no markdown, no explanations, no triple backticks.
+    Respond with a **JSON object** matching the following structure:
+    {{
+        "ai_score": int,
+        "summary": {{
+            "experience_match": {{
+                "years_requirement_met": bool,
+                "experience_level_fit": str
+            }},
+            "overall_match": str,
+            "skill_match": {{
+                "matched_skills": [str],
+                "missing_skills": [str],
+                "skill_gap_percentage": int
+            }}
+        }},
+        "advice": {{
+            "interview_focus_areas": [str],
+            "next_steps": [str],
+            "questions_to_ask": [str]
+        }}
+    }}
+    Return a **JSON object only**, no markdown, no explanations, no triple backticks.
 
     Job Requirement and Resume Data:
     {requirement_data}
-
     """
 
     chain = LLMChain(
@@ -49,17 +72,18 @@ def generate_interview_questions(request: AIQuestionRequest) -> AIQuestionRespon
         prompt=PromptTemplate.from_template(prompt)
     )
 
-   
-    raw_output = chain.invoke({"requirement_data": request.dict()})
-
-   
-    output_text = raw_output["text"] if isinstance(raw_output, dict) else raw_output
-
-    
     try:
-        questions = json.loads(output_text)
+        input_data = {"requirement_data": request.dict()}
+        print(f"Input to chain.invoke: {json.dumps(input_data, indent=2)}")
+        
+        raw_output = chain.invoke(input_data)
+        output_text = raw_output["text"] if isinstance(raw_output, dict) else raw_output
+        output_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", output_text.strip(), flags=re.DOTALL)
+        print(f"Raw LLM output: {output_text}")
+        
+        response_data = json.loads(output_text)
+        return AIQuestionResponse(**response_data)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Failed to parse LLM output as JSON: {e}")
     except Exception as e:
-        raise ValueError(f"Failed to parse LLM output as JSON list:{e}")
-
-   
-    return AIQuestionResponse(questions=questions)
+        raise ValueError(f"Failed to process LLM request: {e}")
