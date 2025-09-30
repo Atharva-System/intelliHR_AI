@@ -21,8 +21,12 @@ You will receive structured feedback input in JSON format.
 The feedback list may contain ANY NUMBER of items, 
 each with an "id", "content", and "keywords".
 
-Analyze ALL the feedback items carefully 
-and generate a structured evaluation following this schema:
+Analyze ALL the feedback items carefully.  
+
+If the feedback is missing, incomplete, empty, or the content/keywords are insufficient for evaluation, 
+return **all fields** with the value "Insufficient data".
+
+Otherwise, generate a structured evaluation following this schema:
 
 {format_instructions}
 
@@ -31,6 +35,8 @@ Input Feedback (variable length list):
 
 Answer strictly in JSON.
 """
+
+
 prompt = PromptTemplate(
     input_variables=["feedback"],
     template=template,
