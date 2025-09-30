@@ -79,3 +79,12 @@ class CandidateAllInOne(BaseModel):
 
 class AskAI(BaseModel):
     response: str
+
+class FeedbackResponse(BaseModel):
+    aiRecommendation: str = Field(..., description="Final recommendation like yes/no/maybe")
+    concerns: List[str] = Field(..., description="List of concerns about the candidate")
+    confidenceScore: int = Field(..., description="Confidence score (0-100)")
+    nextSteps: List[str] = Field(..., description="List of next steps to take")
+    overallAssessment: str = Field(..., description="Overall summary assessment of the candidate")
+    strengths: List[str] = Field(..., description="List of strengths identified")
+    suggestedRating: int = Field(..., description="Suggested rating on a scale (e.g. 1-5)")
