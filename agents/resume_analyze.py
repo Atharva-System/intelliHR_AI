@@ -31,6 +31,9 @@ from config.Settings import settings
 from agents.resume_extractor import resume_info
 from langchain_openai import ChatOpenAI
 from datetime import datetime
+from dotenv import load_dotenv
+from langchain_openai import AzureChatOpenAI
+load_dotenv()
 
 key = settings.api_key
 azure_key = settings.gpt_ai_key
@@ -91,11 +94,11 @@ def extract_resume_from_base64(resume_base64: str, candidate_id: str) -> dict:
         return {}
 
 def resume_score_from_base64(request: BatchAnalyzeResumeRequest) -> List[AnalyzedCandidateResponse]:
-    llm = ChatOpenAI(
-            model="gpt-4",      
-            api_key=azure_key,
-            temperature=0.2,
-            max_tokens=5000
+    llm = AzureChatOpenAI(
+            azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),  
+            openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+            temperature=0.3,
+            max_tokens=2000,
         )
 
     class AISummaryEnhanced(BaseModel):
