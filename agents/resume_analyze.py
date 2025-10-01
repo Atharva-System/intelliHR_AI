@@ -29,10 +29,11 @@ from app.models.resume_analyze_model import (
 )
 from config.Settings import settings
 from agents.resume_extractor import resume_info
-
+from langchain_openai import ChatOpenAI
 from datetime import datetime
 
 key = settings.api_key
+azure_key = settings.gpt_ai_key
 model = settings.model
 
 def detect_file_type_from_bytes(file_bytes: bytes) -> str:
@@ -90,12 +91,12 @@ def extract_resume_from_base64(resume_base64: str, candidate_id: str) -> dict:
         return {}
 
 def resume_score_from_base64(request: BatchAnalyzeResumeRequest) -> List[AnalyzedCandidateResponse]:
-    llm = GoogleGenerativeAI(
-        model=model,
-        google_api_key=key,
-        temperature=0.2,
-        max_output_tokens=5000
-    )
+    llm = ChatOpenAI(
+            model="gpt-4",      
+            api_key=azure_key,
+            temperature=0.2,
+            max_tokens=5000
+        )
 
     class AISummaryEnhanced(BaseModel):
         score: int

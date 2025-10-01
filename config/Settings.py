@@ -9,6 +9,7 @@ load_dotenv()
 class Settings(BaseSettings):
     # API Configuration
     api_key: str = Field(..., env="API_KEY")
+    gpt_ai_key: str = Field(...,env="GPT_AI_KEY")
     model: str = Field(default="gemini-2.0-flash", env="MODEL")
     max_output_tokens: int = Field(default=10000, env="MAX_OUTPUT_TOKENS")
     temperature: float = Field(default=0.2, env="TEMPERATURE")
