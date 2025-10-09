@@ -1,14 +1,20 @@
 import re
 import json
 from typing import List
+from datetime import datetime
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_google_genai import GoogleGenerativeAI
-from app.models.resume_analyze_model import BatchAnalyzeRequest, BatchAnalyzeResponse, AnalyzedCandidate, AISummary, SkillMatch, ExperienceMatch, Job, Candidate
+from app.models.batch_analyze_model import JobCandidateData, BatchAnalyzeCandidateResponse
 from config.Settings import settings
-from datetime import datetime
 
-def generate_batch_analysis(request: BatchAnalyzeRequest) -> List[BatchAnalyzeResponse]:
+
+def generate_batch_analysis(request: JobCandidateData) -> List[BatchAnalyzeCandidateResponse]:
+    """
+    Evaluates all candidates for all jobs using the AI Recruiter prompt.
+    Returns a list of structured BatchAnalyzeCandidateResponse items.
+    """
+
     llm = GoogleGenerativeAI(
         model=settings.model,
         google_api_key=settings.api_key,
@@ -16,66 +22,138 @@ def generate_batch_analysis(request: BatchAnalyzeRequest) -> List[BatchAnalyzeRe
         max_output_tokens=5000
     )
 
+    raw_prompt = """
+    You are an expert AI recruiter and resume analyzer.
 
-    prompt = (
-        "You are an expert AI resume analyzer.\n"
-        "For each job in the request, match all candidates and generate a response in the following format:\n"
-        "- job_id: str\n"
-        "- job_title: str\n"
-        "- candidates: List of analyzed candidates (see below)\n"
-        "- analyzed_at: datetime (ISO format)\n"
-        "- total_sourced_candidates: int\n"
-        "- matching_candidates: int (ai_score > options.minimum_score)\n"
-        "- average_score: int\n"
-        "Each analyzed candidate must have:\n"
-        "- candidate_id: str\n"
-        "- name: str\n"
-        "- email: str\n"
-        "- ai_score: int\n"
-        "- ai_summary: {{ score: int, overall_match: str, skill_match: {{ matched_skills: [str], missing_skills: [str], skill_gap_percentage: int }}, experience_match: {{ years_requirement_met: bool, experience_level_fit: str }} }}\n"
-        "- location: str\n"
-        "- experience_level: str\n"
-        "- primary_domain: str\n"
-        "- application_status: str\n"
-        "- analyzed_at: datetime (ISO format)\n"
-        "Instructions:\n"
-        "- For each job, loop through all candidates and match them.\n"
-        "- Calculate ai_score based on skill and experience match.\n"
-        "- Only return the JSON object(s) in the specified format, no markdown, no explanations.\n"
-        "- Use request.options.minimum_score to filter matching_candidates.\n"
-        "- Use request.jobs and request.candidates fields for matching.\n"
-        "- Return a list of BatchAnalyzeResponse objects, one per job.\n"
-        "Request Data:\n{input_json}"
-    )
+    Your task is to evaluate candidates against job requirements and produce a structured JSON response for each candidate that includes detailed AI insights, match scoring, and reasoning.
 
-    chain = LLMChain(
-        llm=llm,
-        prompt=PromptTemplate(
-            input_variables=["input_json"],
-            template=prompt
-        )
-    )
+    ### Instructions:
+    1. Analyze the candidate’s profile in relation to the job description.
+    2. Calculate a **matchScore** (0–100) representing overall job fit.
+    3. Populate **aiInsights** fields based on the candidate’s resume and job needs.
+    4. Fill all fields using realistic, data-consistent values.
+    5. Return **only valid JSON** — no markdown, no explanations, no extra text.
 
-    input_json = json.dumps(request.dict(), indent=2)
-    raw_output = chain.invoke({"input_json": input_json})
-    output_text = raw_output["text"] if isinstance(raw_output, dict) else raw_output
-    output_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", output_text.strip(), flags=re.DOTALL)
-    response_data = json.loads(output_text)
+    ### JSON Response Format (Strict Schema)
+    Each analyzed candidate must follow this exact JSON schema:
 
-    if isinstance(response_data, dict):
-        response_data = [response_data]
+    {{
+    "job_id": "string",
+    "id": "string",
+    "firstName": "string",
+    "lastName": "string",
+    "email": "string",
+    "phone": "string",
+    "number": "string",
+    "currentTitle": "string",
+    "experienceYears": 0,
+    "skills": [
+        {{
+        "name": "string",
+        "level": "string",
+        "yearsOfExperience": 0,
+        "isVerified": false
+        }}
+    ],
+    "availability": "string",
+    "matchScore": 0,
+    "aiInsights": {{
+        "coreSkillsScore": 0,
+        "experienceScore": 0,
+        "culturalFitScore": 0,
+        "strengths": [
+        {{
+            "category": "string",
+            "point": "string",
+            "impact": "string",
+            "weight": 0
+        }}
+        ],
+        "concerns": ["string"],
+        "uniqueQualities": ["string"],
+        "skillMatches": [
+        {{
+            "jobRequirement": "string",
+            "candidateSkill": "string",
+            "matchStrength": "string",
+            "confidenceScore": 0
+        }}
+        ],
+        "skillGaps": ["string"],
+        "recommendation": "string",
+        "confidenceLevel": 0,
+        "reasoningSummary": "string"
+    }},
+    "lastAnalyzedAt": "string (ISO datetime)",
+    "notes": ["string"]
+    }}
 
-    # Filter candidates by minimum_score and update matching_candidates/average_score
-    min_score = request.options.minimum_score if hasattr(request.options, "minimum_score") else 0
-    filtered_responses = []
-    for resp in response_data:
-        candidates = resp.get("candidates", [])
-        filtered_candidates = [c for c in candidates if c.get("ai_score", 0) >= min_score]
-        resp["candidates"] = filtered_candidates
-        resp["matching_candidates"] = len(filtered_candidates)
-        if filtered_candidates:
-            resp["average_score"] = int(sum(c.get("ai_score", 0) for c in filtered_candidates) / len(filtered_candidates))
-        else:
-            resp["average_score"] = 0
-        filtered_responses.append(BatchAnalyzeResponse(**resp))
-    return filtered_responses
+    ### Guidelines:
+    - Use realistic data (no placeholders like “string”).
+    - Compute scores logically:
+        - **matchScore** = weighted blend of skills, experience, and fit.
+        - **coreSkillsScore**, **experienceScore**, and **culturalFitScore** reflect alignment.
+    - Include 2–3 **strengths**, 1–2 **concerns**, and 2–3 **skillMatches** or **skillGaps**.
+    - `lastAnalyzedAt` must be the current date-time in ISO 8601 format.
+    - Include `job_id` from job data.
+    - `availability` and `number` come from candidate data.
+    - `applicationStatus` should be one of: “screening”, “interview”, “rejected”, or “hired”.
+    - Return **only JSON** — no text, markdown, or backticks.
+
+    ### Data for Evaluation:
+    Job Information:
+    {job_json}
+
+    Candidate Information:
+    {candidate_json}
+
+    ### Output:
+    Return a **single candidate JSON object** following the schema above.
+    """
+
+    prompt = PromptTemplate.from_template(raw_prompt)
+    chain = LLMChain(llm=llm, prompt=prompt)
+
+    all_results = []
+
+    for job in request.jobs:
+        for candidate in request.candidates:
+            job_json = json.dumps(job.dict(), indent=2)
+            candidate_json = json.dumps(candidate.dict(), indent=2)
+
+            raw_output = chain.invoke({"job_json": job_json, "candidate_json": candidate_json})
+
+            output_text = raw_output["text"] if isinstance(raw_output, dict) else raw_output
+            output_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", output_text.strip(), flags=re.DOTALL)
+
+            try:
+                response = json.loads(output_text)
+            except Exception:
+                cleaned = re.search(r"\{.*\}", output_text, re.DOTALL)
+                response = json.loads(cleaned.group(0)) if cleaned else {}
+
+            
+            response["job_id"] = job.job_id
+            response["number"] = response.get("number") or candidate.number or ""
+            response["availability"] = response.get("availability") or candidate.availability or ""
+            response["phone"] = response.get("phone") or candidate.phone or ""
+            response["currentTitle"] = response.get("currentTitle") or candidate.currentTitle or ""
+            response["lastAnalyzedAt"] = datetime.now().isoformat()
+            if "notes" not in response:
+                response["notes"] = []
+
+            
+            for s in response.get("skills", []):
+                if not isinstance(s.get("level"), str):
+                    s["level"] = "Intermediate"
+
+            
+            for s in response.get("aiInsights", {}).get("strengths", []):
+                try:
+                    s["weight"] = float(s.get("weight", 0))
+                except Exception:
+                    s["weight"] = 0.5
+
+            all_results.append(BatchAnalyzeCandidateResponse(**response))
+
+    return all_results

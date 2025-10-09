@@ -9,14 +9,11 @@ from agents.resume_extractor import resume_info
 import logging
 import uuid
 from pathlib import Path
+from app.models.resume_analyze_model import AIQuestionRequest, AIQuestionResponse
 from config.Settings import settings
-from app.models.resume_analyze_model import (
-    BatchAnalyzeRequest, 
-    BatchAnalyzeResponse, 
-    AIQuestionRequest, 
-    AIQuestionResponse,
-    BatchAnalyzeResumeRequest, 
-    AnalyzedCandidateResponse
+from app.models.batch_analyze_model import (
+    JobCandidateData,
+    BatchAnalyzeCandidateResponse,
 )
 from agents.resume_analyze import generate_batch_analysis
 from agents.ai_question_generate import generate_interview_questions
@@ -289,15 +286,14 @@ def parse_resumes(payload: MultipleFiles):
 
 
 
-@router.post("/ai/batch-analyze-resumes", response_model=List[BatchAnalyzeResponse])
-def batch_analyze_resumes_api(request: BatchAnalyzeRequest):
+@router.post("/ai/batch-analyze-resumes", response_model=List[BatchAnalyzeCandidateResponse])
+def batch_analyze_resumes_api(request: JobCandidateData):
     try:
-        logger.info(f"Received batch analyze request with {len(request.candidates)} candidates and {len(request.jobs)} jobs")
         responses = generate_batch_analysis(request)
         return responses
     except Exception as e:
-        logger.error(f"Error generating batch AI analysis: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to generate batch AI analysis")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @router.post("/generate-ai-question", response_model=AIQuestionResponse)
