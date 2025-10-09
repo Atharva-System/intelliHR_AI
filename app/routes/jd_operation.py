@@ -5,7 +5,6 @@ from app.models.jd_model import JobInput, JobTitleAISuggestInput, JobDescription
 import json
 import logging
 from app.models.resume_analyze_model import BatchAnalyzeRequest, BatchAnalyzeResponse
-from agents.resume_analyze import resume_score
 
 router = APIRouter()
 
