@@ -144,7 +144,7 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
                 except Exception:
                     s["weight"] = 0.5
 
-            all_results.append(BatchAnalyzeCandidateResponse(**response))
+            all_results.append(CandidateAnalysisResponse(**response))
 
     filtered_results = [
         candidate for candidate in all_results

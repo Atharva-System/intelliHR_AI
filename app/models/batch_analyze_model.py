@@ -28,53 +28,44 @@ class JobCandidateData(BaseModel):
     threshold: Optional[int] = 50
 
     
-class Skill(BaseModel):
-    name: Optional[str]
-    level: Optional[str]
-    yearsOfExperience: Optional[int]
-    isVerified: Optional[bool]
-
 class Strength(BaseModel):
-    category: Optional[str]
-    point: Optional[str]
-    impact: Optional[str]
-    weight: Optional[int]
+    category: Optional[str] = None
+    point: Optional[str] = None
+    impact: Optional[str] = None
+    weight: Optional[float] = 0.0  
 
 class SkillMatch(BaseModel):
-    jobRequirement: Optional[str]
-    candidateSkill: Optional[str]
-    matchStrength: Optional[str]
-    confidenceScore: Optional[float]
+    jobRequirement: Optional[str] = None
+    candidateSkill: Optional[str] = None
+    matchStrength: Optional[str] = None
+    confidenceScore: Optional[float] = 0.0
 
 class AIInsights(BaseModel):
-    coreSkillsScore: Optional[float]
-    experienceScore: Optional[float]
-    culturalFitScore: Optional[float]
-    strengths: Optional[List[Strength]]
-    concerns: Optional[List[str]]
-    uniqueQualities: Optional[List[str]]
-    skillMatches: Optional[List[SkillMatch]]
-    skillGaps: Optional[List[str]]
-    recommendation: Optional[str]
-    confidenceLevel: Optional[float]
-    reasoningSummary: Optional[str]
+    coreSkillsScore: Optional[float] = 0.0
+    experienceScore: Optional[float] = 0.0
+    culturalFitScore: Optional[float] = 0.0
+    strengths: Optional[List[Strength]] = []
+    concerns: Optional[List[str]] = []
+    uniqueQualities: Optional[List[str]] = []
+    skillMatches: Optional[List[SkillMatch]] = []
+    skillGaps: Optional[List[str]] = []
+    recommendation: Optional[str] = None
+    confidenceLevel: Optional[float] = 0.0
+    reasoningSummary: Optional[str] = None
 
 class CandidateAnalysisResponse(BaseModel):
-    id: Optional[str]
-    firstName: Optional[str]
-    lastName: Optional[str]
-    email: Optional[EmailStr]
-    phone: Optional[str]
-    currentTitle: Optional[str]
-    experienceYears: Optional[int]
-    skills: Optional[List[Skill]]
-    availability: Optional[str]
-    matchScore: Optional[float]
-    aiInsights: Optional[AIInsights]
-    lastAnalyzedAt: Optional[str]
-    applicationStatus: Optional[str]
-    isShortlisted: Optional[bool]
-    notes: Optional[List[str]]
-
-class Config:
-        orm_mode = True
+    id: Optional[str] = None
+    firstName: Optional[str] = None
+    lastName: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    currentTitle: Optional[str] = None
+    experienceYears: Optional[int] = 0
+    skills: Optional[List[dict]] = []
+    availability: Optional[str] = None
+    matchScore: Optional[float] = 0.0
+    aiInsights: Optional[AIInsights] = AIInsights()
+    lastAnalyzedAt: Optional[str] = None
+    applicationStatus: Optional[str] = "screening"
+    isShortlisted: Optional[bool] = False
+    notes: Optional[List[str]] = []
