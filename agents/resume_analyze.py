@@ -5,16 +5,10 @@ from datetime import datetime
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_google_genai import GoogleGenerativeAI
-from app.models.batch_analyze_model import JobCandidateData, BatchAnalyzeCandidateResponse
+from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
 from config.Settings import settings
 
-
-def generate_batch_analysis(request: JobCandidateData) -> List[BatchAnalyzeCandidateResponse]:
-    """
-    Evaluates all candidates for all jobs using the AI Recruiter prompt.
-    Returns a list of structured BatchAnalyzeCandidateResponse items.
-    """
-
+def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysisResponse]:
     llm = GoogleGenerativeAI(
         model=settings.model,
         google_api_key=settings.api_key,
@@ -44,7 +38,6 @@ def generate_batch_analysis(request: JobCandidateData) -> List[BatchAnalyzeCandi
     "lastName": "string",
     "email": "string",
     "phone": "string",
-    "number": "string",
     "currentTitle": "string",
     "experienceYears": 0,
     "skills": [
@@ -116,13 +109,12 @@ def generate_batch_analysis(request: JobCandidateData) -> List[BatchAnalyzeCandi
 
     all_results = []
 
-    for job in request.jobs:
-        for candidate in request.candidates:
-            job_json = json.dumps(job.dict(), indent=2)
-            candidate_json = json.dumps(candidate.dict(), indent=2)
+    for job in request.jobs or []:
+        for candidate in request.candidates or []:
+            job_json = json.dumps(job.dict(exclude_none=True), indent=2)
+            candidate_json = json.dumps(candidate.dict(exclude_none=True), indent=2)
 
             raw_output = chain.invoke({"job_json": job_json, "candidate_json": candidate_json})
-
             output_text = raw_output["text"] if isinstance(raw_output, dict) else raw_output
             output_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", output_text.strip(), flags=re.DOTALL)
 
@@ -132,22 +124,20 @@ def generate_batch_analysis(request: JobCandidateData) -> List[BatchAnalyzeCandi
                 cleaned = re.search(r"\{.*\}", output_text, re.DOTALL)
                 response = json.loads(cleaned.group(0)) if cleaned else {}
 
-            
-            response["job_id"] = job.job_id
-            response["number"] = response.get("number") or candidate.number or ""
-            response["availability"] = response.get("availability") or candidate.availability or ""
-            response["phone"] = response.get("phone") or candidate.phone or ""
-            response["currentTitle"] = response.get("currentTitle") or candidate.currentTitle or ""
+    
+            response["job_id"] = job.job_id or ""
+            response["availability"] = response.get("availability") or getattr(candidate, "availability", "") or ""
+            response["phone"] = response.get("phone") or getattr(candidate, "phone", "") or ""
+            response["currentTitle"] = response.get("currentTitle") or getattr(candidate, "currentTitle", "") or ""
             response["lastAnalyzedAt"] = datetime.now().isoformat()
-            if "notes" not in response:
-                response["notes"] = []
+            response["notes"] = response.get("notes") or []
 
-            
+        
             for s in response.get("skills", []):
                 if not isinstance(s.get("level"), str):
                     s["level"] = "Intermediate"
 
-            
+        
             for s in response.get("aiInsights", {}).get("strengths", []):
                 try:
                     s["weight"] = float(s.get("weight", 0))
@@ -156,4 +146,9 @@ def generate_batch_analysis(request: JobCandidateData) -> List[BatchAnalyzeCandi
 
             all_results.append(BatchAnalyzeCandidateResponse(**response))
 
-    return all_results
+    filtered_results = [
+        candidate for candidate in all_results
+        if (candidate.matchScore or 0) >= (request.threshold or 0)
+    ]
+
+    return filtered_results

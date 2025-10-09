@@ -11,10 +11,7 @@ import uuid
 from pathlib import Path
 from app.models.resume_analyze_model import AIQuestionRequest, AIQuestionResponse
 from config.Settings import settings
-from app.models.batch_analyze_model import (
-    JobCandidateData,
-    BatchAnalyzeCandidateResponse,
-)
+from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
 from agents.resume_analyze import generate_batch_analysis
 from agents.ai_question_generate import generate_interview_questions
 
@@ -286,13 +283,21 @@ def parse_resumes(payload: MultipleFiles):
 
 
 
-@router.post("/ai/batch-analyze-resumes", response_model=List[BatchAnalyzeCandidateResponse])
+@router.post("/ai/batch-analyze-resumes", response_model=List[CandidateAnalysisResponse])
 def batch_analyze_resumes_api(request: JobCandidateData):
     try:
+        num_candidates = len(request.candidates) if request.candidates else 0
+        num_jobs = len(request.jobs) if request.jobs else 0
+        logger.info(f"Received batch analyze request with {num_candidates} candidates and {num_jobs} jobs")
+
         responses = generate_batch_analysis(request)
-        return responses
+        serialized = [r.dict(exclude_none=True) for r in responses]
+
+        return serialized
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error generating batch AI analysis: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate batch AI analysis")
 
 
 

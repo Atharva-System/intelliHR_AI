@@ -1,86 +1,80 @@
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr
 
+class JobRequest(BaseModel):
+    job_id: Optional[str]
+    title: Optional[str]
+    description: Optional[str]
+    experience_level: Optional[str]
+    technical_skills: Optional[List[str]]
+    responsibilities: Optional[List[str]]
+    softSkills: Optional[List[str]]
+    qualification: Optional[List[str]]
 
-class Job(BaseModel):
-    job_id: str
-    title: str
-    description: str
-    experience_level: str
-    technical_skills: List[str]
-    responsibilities: List[str]
-    softSkills: List[str]
-    qualification: List[str]
-
-
-class Candidate(BaseModel):
-    id: str
-    firstName: str
-    lastName: str
-    email: EmailStr
-    phone: Optional[str] = None
-    number: Optional[str] = None  
-    currentTitle: Optional[str] = None
-    experienceYears: int
-    skills: List[str]
-    availability: Optional[str] = None 
-
+class CandidateRequest(BaseModel):
+    candidateId: Optional[str]
+    name: Optional[str]
+    phone: Optional[str]
+    email: Optional[EmailStr]
+    location: Optional[str]
+    experience_level: Optional[str]
+    technical_skills: Optional[List[str]]
+    softSkills: Optional[List[str]]
+    qualification: Optional[List[str]]
 
 class JobCandidateData(BaseModel):
-    jobs: List[Job]
-    candidates: List[Candidate]
+    jobs: Optional[List[JobRequest]]
+    candidates: Optional[List[CandidateRequest]]
+    threshold: Optional[int] = 50
 
-
-
-
+    
 class Skill(BaseModel):
-    name: str
-    level: Optional[str] = ""  
-    yearsOfExperience: int
-    isVerified: bool
-
+    name: Optional[str]
+    level: Optional[str]
+    yearsOfExperience: Optional[int]
+    isVerified: Optional[bool]
 
 class Strength(BaseModel):
-    category: str
-    point: str
-    impact: str
-    weight: float  
-
+    category: Optional[str]
+    point: Optional[str]
+    impact: Optional[str]
+    weight: Optional[int]
 
 class SkillMatch(BaseModel):
-    jobRequirement: str
-    candidateSkill: str
-    matchStrength: str
-    confidenceScore: float
-
+    jobRequirement: Optional[str]
+    candidateSkill: Optional[str]
+    matchStrength: Optional[str]
+    confidenceScore: Optional[float]
 
 class AIInsights(BaseModel):
-    coreSkillsScore: float
-    experienceScore: float
-    culturalFitScore: float
-    strengths: List[Strength]
-    concerns: List[str]
-    uniqueQualities: List[str]
-    skillMatches: List[SkillMatch]
-    skillGaps: List[str]
-    recommendation: str
-    confidenceLevel: float
-    reasoningSummary: str
+    coreSkillsScore: Optional[float]
+    experienceScore: Optional[float]
+    culturalFitScore: Optional[float]
+    strengths: Optional[List[Strength]]
+    concerns: Optional[List[str]]
+    uniqueQualities: Optional[List[str]]
+    skillMatches: Optional[List[SkillMatch]]
+    skillGaps: Optional[List[str]]
+    recommendation: Optional[str]
+    confidenceLevel: Optional[float]
+    reasoningSummary: Optional[str]
 
+class CandidateAnalysisResponse(BaseModel):
+    id: Optional[str]
+    firstName: Optional[str]
+    lastName: Optional[str]
+    email: Optional[EmailStr]
+    phone: Optional[str]
+    currentTitle: Optional[str]
+    experienceYears: Optional[int]
+    skills: Optional[List[Skill]]
+    availability: Optional[str]
+    matchScore: Optional[float]
+    aiInsights: Optional[AIInsights]
+    lastAnalyzedAt: Optional[str]
+    applicationStatus: Optional[str]
+    isShortlisted: Optional[bool]
+    notes: Optional[List[str]]
 
-class BatchAnalyzeCandidateResponse(BaseModel):
-    job_id: str
-    id: str
-    firstName: str
-    lastName: str
-    email: EmailStr
-    phone: Optional[str] = None
-    number: Optional[str] = None  
-    currentTitle: Optional[str] = None
-    experienceYears: int
-    skills: List[Skill]
-    availability: Optional[str] = None
-    matchScore: float
-    aiInsights: AIInsights
-    lastAnalyzedAt: str
-    notes: List[str]
+class Config:
+        orm_mode = True
