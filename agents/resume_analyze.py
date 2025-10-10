@@ -23,10 +23,18 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
 
     ### Instructions:
     1. Analyze the candidate’s profile in relation to the job description.
-    2. Calculate a **matchScore** (0–100) representing overall job fit.
-    3. Populate **aiInsights** fields based on the candidate’s resume and job needs.
-    4. Fill all fields using realistic, data-consistent values.
-    5. Return **only valid JSON** — no markdown, no explanations, no extra text.
+    2. Perform **qualification validation**:
+        - If the job specifies a minimum qualification (e.g., "Bachelor's degree") and the candidate's qualification does **not** meet it, set **all scores** (matchScore, coreSkillsScore, experienceScore, culturalFitScore) to 0.
+        - Add a concern explaining why scores are 0, e.g., "Candidate does not meet the minimum qualification requirement."
+    3. Perform **experience validation**:
+        - If the job specifies a minimum experience (e.g., 5 years), and the candidate’s experienceYears is **less than required**, set **experienceScore** and overall **matchScore** to 0.
+        - Add a concern explaining why experience is insufficient, e.g., "Candidate has 3 years experience; minimum required is 5 years."
+    4. Perform **data anomaly check**:
+        - If you identify any unusual, unexpected, or suspicious word, field, or value in the candidate data (e.g., missing phone, malformed email, inconsistent experience), **do not modify any other field**.
+        - Instead, **add a concern** describing what was identified, e.g., "Candidate phone number format is unusual."
+    5. If candidate meets qualification and experience, compute all scores normally.
+    6. Populate **aiInsights** fields based on the candidate’s resume and job needs.
+    7. Return **only valid JSON** — no markdown, no explanations, no extra text.
 
     ### JSON Response Format (Strict Schema)
     Each analyzed candidate must follow this exact JSON schema:
@@ -86,10 +94,10 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
     - Compute scores logically:
         - **matchScore** = weighted blend of skills, experience, and fit.
         - **coreSkillsScore**, **experienceScore**, and **culturalFitScore** reflect alignment.
-    - Include 2–3 **strengths**, 1–2 **concerns**, and 2–3 **skillMatches** or **skillGaps**.
+    - Include **strengths**, **concerns**, **skillMatches** or **skillGaps**.
     - `lastAnalyzedAt` must be the current date-time in ISO 8601 format.
     - Include `job_id` from job data.
-    - `availability` and `number` come from candidate data.
+    - `availability` and number come from candidate data.
     - `applicationStatus` should be one of: “screening”, “interview”, “rejected”, or “hired”.
     - Return **only JSON** — no text, markdown, or backticks.
 
@@ -101,8 +109,10 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
     {candidate_json}
 
     ### Output:
-    Return a **single candidate JSON object** following the schema above.
+    Return a **single candidate JSON object** following the schema above, applying qualification, experience, and data anomaly validations.
     """
+
+
 
     prompt = PromptTemplate.from_template(raw_prompt)
     chain = LLMChain(llm=llm, prompt=prompt)
@@ -150,5 +160,6 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
         candidate for candidate in all_results
         if (candidate.matchScore or 0) >= (request.threshold or 0)
     ]
+    print(all_results)
 
     return filtered_results
