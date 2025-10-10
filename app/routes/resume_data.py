@@ -9,16 +9,10 @@ from agents.resume_extractor import resume_info
 import logging
 import uuid
 from pathlib import Path
+from app.models.resume_analyze_model import AIQuestionRequest, AIQuestionResponse
 from config.Settings import settings
-from app.models.resume_analyze_model import (
-    BatchAnalyzeRequest, 
-    BatchAnalyzeResponse, 
-    AIQuestionRequest, 
-    AIQuestionResponse,
-    BatchAnalyzeResumeRequest, 
-    AnalyzedCandidateResponse
-)
-from agents.resume_analyze import resume_score, resume_score_from_base64
+from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
+from agents.resume_analyze import generate_batch_analysis
 from agents.ai_question_generate import generate_interview_questions
 
 logger = logging.getLogger(__name__)
@@ -287,21 +281,24 @@ def parse_resumes(payload: MultipleFiles):
         logger.error(f"Critical error in parse_resumes for request {request_id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-@router.post("/ai/batch-analyze-resumes", response_model=List[AnalyzedCandidateResponse])
-def analyze_resumes_from_base64(request: BatchAnalyzeResumeRequest):
+
+
+@router.post("/ai/batch-analyze-resumes", response_model=List[CandidateAnalysisResponse])
+def batch_analyze_resumes_api(request: JobCandidateData):
     try:
-        logger.info(f"Received batch analyze request with {len(request.candidates)} candidates")
-        for candidate in request.candidates:
-            logger.debug(f"Candidate {candidate.candidate_id}: Base64 length = {len(candidate.resumeBase64)}")
-        response = resume_score_from_base64(request)
-        filtered_response = [
-            candidate for candidate in response
-            if candidate.matchScore >= request.threshold
-        ]
-        return filtered_response
+        num_candidates = len(request.candidates) if request.candidates else 0
+        num_jobs = len(request.jobs) if request.jobs else 0
+        logger.info(f"Received batch analyze request with {num_candidates} candidates and {num_jobs} jobs")
+
+        responses = generate_batch_analysis(request)
+        serialized = [r.dict(exclude_none=True) for r in responses]
+
+        return serialized
+
     except Exception as e:
-        logger.error(f"Error generating AI analysis from resumes: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to generate AI analysis")
+        logger.error(f"Error generating batch AI analysis: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate batch AI analysis")
+
 
 
 @router.post("/generate-ai-question", response_model=AIQuestionResponse)
