@@ -13,6 +13,7 @@ class JobRequest(BaseModel):
 
 class CandidateRequest(BaseModel):
     candidateId: Optional[str]
+    currentTitle: Optional[str]
     name: Optional[str]
     phone: Optional[str]
     email: Optional[EmailStr]
