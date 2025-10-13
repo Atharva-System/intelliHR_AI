@@ -39,7 +39,7 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
     "email": "string",
     "phone": "string",
     "currentTitle": "string",
-    "experienceYears": "string",
+    "experienceYears": 0,
     "skills": [
         {{
         "name": "string",
