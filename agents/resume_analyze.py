@@ -8,6 +8,20 @@ from langchain_google_genai import GoogleGenerativeAI
 from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
 from config.Settings import settings
 
+def map_experience_level(years: float) -> str:
+    if years <= 1:
+        return "Entry Level"
+    elif 1 < years <= 3:
+        return "Junior"
+    elif 3 < years <= 5:
+        return "Mid Level"
+    elif 5 < years <= 7:
+        return "Mid-Senior Level"
+    elif 7 < years <= 10:
+        return "Senior"
+    else:
+        return "Lead"
+
 def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysisResponse]:
     llm = GoogleGenerativeAI(
         model=settings.model,
@@ -112,18 +126,14 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
     Return a **single candidate JSON object** following the schema above, applying qualification, experience, and data anomaly validations.
     """
 
-
-
     prompt = PromptTemplate.from_template(raw_prompt)
     chain = LLMChain(llm=llm, prompt=prompt)
-
     all_results = []
 
     for job in request.jobs or []:
         for candidate in request.candidates or []:
             job_json = json.dumps(job.dict(exclude_none=True), indent=2)
             candidate_json = json.dumps(candidate.dict(exclude_none=True), indent=2)
-
             raw_output = chain.invoke({"job_json": job_json, "candidate_json": candidate_json})
             output_text = raw_output["text"] if isinstance(raw_output, dict) else raw_output
             output_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", output_text.strip(), flags=re.DOTALL)
@@ -134,20 +144,19 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
                 cleaned = re.search(r"\{.*\}", output_text, re.DOTALL)
                 response = json.loads(cleaned.group(0)) if cleaned else {}
 
-    
             response["job_id"] = job.job_id or ""
             response["availability"] = response.get("availability") or getattr(candidate, "availability", "") or ""
             response["phone"] = response.get("phone") or getattr(candidate, "phone", "") or ""
             response["currentTitle"] = response.get("currentTitle") or getattr(candidate, "currentTitle", "") or ""
             response["lastAnalyzedAt"] = datetime.now().isoformat()
+            experience_years = response.get("experienceYears", 0)
+            response["experienceYears"] = map_experience_level(experience_years)
             response["notes"] = response.get("notes") or []
 
-        
             for s in response.get("skills", []):
                 if not isinstance(s.get("level"), str):
                     s["level"] = "Intermediate"
 
-        
             for s in response.get("aiInsights", {}).get("strengths", []):
                 try:
                     s["weight"] = float(s.get("weight", 0))
@@ -161,5 +170,4 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
         if (candidate.matchScore or 0) >= (request.threshold or 0)
     ]
     print(all_results)
-
     return filtered_results

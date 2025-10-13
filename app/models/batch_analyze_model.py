@@ -61,7 +61,7 @@ class CandidateAnalysisResponse(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     currentTitle: Optional[str] = None
-    experienceYears: Optional[int] = 0
+    experienceYears: Optional[str] = None
     skills: Optional[List[dict]] = []
     availability: Optional[str] = None
     matchScore: Optional[float] = 0.0
