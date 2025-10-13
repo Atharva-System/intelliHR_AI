@@ -60,6 +60,7 @@ You are an expert information extractor. Extract candidate details from the give
 ### Tags:
   - Create short, descriptive tags (strings) that summarize the candidate’s expertise, experience, and career focus.
   - Tags should highlight both **explicitly mentioned skills** and **skill-based identity** inferred from combinations of technologies.
+  - generate 1-2 education tag also.
   - Examples:
     - If user knows React, HTML, and CSS → include "Frontend Developer"
     - If user knows React + Python/Django/Node.js → include "Full Stack Developer"
