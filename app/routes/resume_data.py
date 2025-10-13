@@ -12,7 +12,7 @@ from pathlib import Path
 from app.models.resume_analyze_model import AIQuestionRequest, AIQuestionResponse
 from config.Settings import settings
 from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
-from agents.resume_analyze import resume_info
+from agents.resume_analyze import generate_batch_analysis
 from agents.ai_question_generate import generate_interview_questions
 
 logger = logging.getLogger(__name__)
@@ -290,7 +290,7 @@ def batch_analyze_resumes_api(request: JobCandidateData):
         num_jobs = len(request.jobs) if request.jobs else 0
         logger.info(f"Received batch analyze request with {num_candidates} candidates and {num_jobs} jobs")
 
-        responses = resume_info(request)
+        responses = generate_batch_analysis(request)
         serialized = [r.dict(exclude_none=True) for r in responses]
 
         return serialized
