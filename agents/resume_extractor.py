@@ -44,12 +44,13 @@ You are an expert information extractor. Extract candidate details from the give
 - If only a year or month-year is provided, approximate duration accordingly.
 - If start date and for end date continue mention use current month year.
 - Use the following criteria for `experience_level`:
-  - **Entry level**: 0–1 years
-  - **Junior level**: 1–3 years
-  - **Mid level**: 3–5 years
-  - **Mid-senior**: 5–7 years
-  - **Senior**: 7–10 years
-  - **Lead**: 10+ years
+  - **Entry Level: 0–1 years
+  - **Junior Level: 1–3 years
+  - **Mid Level: 3–5 years
+  - **Mid-Senior Level: 5–7 years
+  - **Senior Level: 7–10 years
+  - **Lead Level: 10+ years
+  - **Principal/Director: 15+ years
 - This section can also include primary domain, key strengths, career progression score (1–10), skill diversity score (1–10), and good_point if apparent.
 
 ### Tags:
