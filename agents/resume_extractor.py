@@ -7,6 +7,8 @@ from agents.types import CandidateAllInOne
 from app.services.text_extract import pdf_to_text
 from config.Settings import settings
 
+
+
 key = settings.api_key
 model = settings.model
 llm = GoogleGenerativeAI(
@@ -36,7 +38,11 @@ You are an expert information extractor. Extract candidate details from the give
 9. Do not add extra text, explanations, or comments—return JSON only.
 
 ### AI Analysis Extraction:
-- For `ai_analysis`, you may provide insights based on the candidate's text even if not explicitly stated.
+- For ai_analysis, you may provide insights based on the candidate's text even if not explicitly stated.
+- Compute experience_level as **total years of experience**: - Sum the duration of all work experiences. 
+- If start_date and end_date are provided, calculate the exact duration.
+- If only a year or month-year is provided, approximate duration accordingly.
+- If start date and for end date continue mention use current month year.
 - Use the following criteria for `experience_level`:
   - **Entry level**: 0–1 years
   - **Junior level**: 1–3 years
