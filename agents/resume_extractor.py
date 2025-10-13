@@ -46,7 +46,7 @@ You are an expert information extractor. Extract candidate details from the give
 - Compute experience_level as **total years of experience**: - Sum the duration of all work experiences. 
 - If start_date and end_date are provided, calculate the exact duration.
 - If only a year or month-year is provided, approximate duration accordingly.
-- If start date and for end date continue or present or any related things mention use month {month} year {year}.
+- If start date and for end date continue or present or working any related things mention use month {month} year {year}.
 - Use the following criteria for `experience_level`:
   - **Entry Level: 0–1 years
   - **Junior Level: 1–3 years
