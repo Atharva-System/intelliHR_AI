@@ -60,7 +60,7 @@ class Skills(BaseModel):
 
 
 class AIAnalysis(BaseModel):
-    experience_level: Optional[float] = None
+    experience_level: Optional[str] = None
     primary_domain: Optional[str] = None
     key_strengths: Optional[List[str]] = None
     career_progression_score: Optional[int] = None

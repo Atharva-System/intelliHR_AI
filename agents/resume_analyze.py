@@ -1,12 +1,106 @@
-import re
 import json
-from typing import List
-from datetime import datetime
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_google_genai import GoogleGenerativeAI
-from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
+from langchain.output_parsers import PydanticOutputParser
+from agents.types import CandidateAllInOne
+from app.services.text_extract import pdf_to_text
 from config.Settings import settings
+
+key = settings.api_key
+model = settings.model
+llm = GoogleGenerativeAI(
+    model=model,
+    google_api_key=key,
+    temperature=0.2,
+    max_output_tokens=8000,
+)
+
+parser = PydanticOutputParser(pydantic_object=CandidateAllInOne)
+
+prompt = PromptTemplate(
+    input_variables=["text"],
+    template="""
+    You are an expert information extractor. Extract candidate details from the given text and return a JSON object that strictly matches the CandidateAllInOne schema below.
+
+    ### Extraction Rules:
+    1. For all fields except ai_analysis and tags, extract only information explicitly present in the text.
+    2. Do not infer, assume, or generate missing data for non-AI-analysis fields.
+    3. If a value is not provided in the text (except AI analysis), set it to null.
+    4. Output must be strictly valid JSON.
+    5. Dates should follow the format "YYYY-MM".
+    6. Phone numbers should be digits only.
+    7. All technologies mentioned anywhere in the text should be listed in technical_skills.
+    8. Skills must not include tool names unless explicitly listed.
+    9. Do not add extra text, explanations, or comments—return JSON only.
+
+    ### AI Analysis Extraction:
+    - For ai_analysis, you may provide insights based on the candidate's text even if not explicitly stated.
+    - Compute experience_level as total years of experience:
+      - Sum the duration of all work experiences.
+      - If start_date and end_date are provided, calculate the exact duration.
+      - If only a year or month-year is provided, approximate duration accordingly.
+      - If an explicit experience field is provided, include that.
+    - This section can also include primary domain, key strengths, career progression score (1–10), skill diversity score (1–10), and good_point if apparent.
+
+    ### Tags:
+    - Create short, descriptive tags that summarize the candidate’s expertise, experience, and career focus.
+
+    ### Schema:
+    {{
+      "personal_info": {{
+        "full_name": string | null,
+        "email": string | null,
+        "phone": string | null,
+        "location": string | null
+      }},
+      "work_experience": [
+        {{
+          "company": string | null,
+          "position": string | null,
+          "start_date": string | null,
+          "end_date": string | null,
+          "is_current": boolean | null
+        }}
+      ] | null,
+      "education": [
+        {{
+          "institution": string | null,
+          "degree": string | null,
+          "field_of_study": string | null,
+          "start_date": string | null,
+          "end_date": string | null
+        }}
+      ] | null,
+      "skills": {{
+        "technical_skills": [string] | null,
+        "soft_skills": [string] | null
+      }} | null,
+      "ai_analysis": {{
+        "experience_level": float | null,
+        "primary_domain": string | null,
+        "key_strengths": [string] | null,
+        "career_progression_score": int | null,
+        "skill_diversity_score": int | null,
+        "good_point": string | null
+      }} | null,
+      "tags": [string] | null
+    }}
+
+    ### Input Text:
+    {text}
+
+    ### Output:
+    Return only the JSON object.
+    """
+)
+
+candidate_extraction_chain = LLMChain(
+    llm=llm,
+    prompt=prompt,
+    output_parser=parser,
+    verbose=True
+)
 
 def map_experience_level(years: float) -> str:
     if years <= 1:
@@ -22,152 +116,22 @@ def map_experience_level(years: float) -> str:
     else:
         return "Lead"
 
-def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysisResponse]:
-    llm = GoogleGenerativeAI(
-        model=settings.model,
-        google_api_key=settings.api_key,
-        temperature=0.2,
-        max_output_tokens=5000
-    )
-
-    raw_prompt = """
-    You are an expert AI recruiter and resume analyzer.
-
-    Your task is to evaluate candidates against job requirements and produce a structured JSON response for each candidate that includes detailed AI insights, match scoring, and reasoning.
-
-    ### Instructions:
-    1. Analyze the candidate’s profile in relation to the job description.
-    2. Perform **qualification validation**:
-        - If the job specifies a minimum qualification (e.g., "Bachelor's degree") and the candidate's qualification does **not** meet it, set **all scores** (matchScore, coreSkillsScore, experienceScore, culturalFitScore) to 0.
-        - Add a concern explaining why scores are 0, e.g., "Candidate does not meet the minimum qualification requirement."
-    3. Perform **experience validation**:
-        - If the job specifies a minimum experience (e.g., 5 years), and the candidate’s experienceYears is **less than required**, set **experienceScore** and overall **matchScore** to 0.
-        - Add a concern explaining why experience is insufficient, e.g., "Candidate has 3 years experience; minimum required is 5 years."
-    4. Perform **data anomaly check**:
-        - If you identify any unusual, unexpected, or suspicious word, field, or value in the candidate data (e.g., missing phone, malformed email, inconsistent experience), **do not modify any other field**.
-        - Instead, **add a concern** describing what was identified, e.g., "Candidate phone number format is unusual."
-    5. If candidate meets qualification and experience, compute all scores normally.
-    6. Populate **aiInsights** fields based on the candidate’s resume and job needs.
-    7. Return **only valid JSON** — no markdown, no explanations, no extra text.
-
-    ### JSON Response Format (Strict Schema)
-    Each analyzed candidate must follow this exact JSON schema:
-
-    {{
-    "job_id": "string",
-    "id": "string",
-    "firstName": "string",
-    "lastName": "string",
-    "email": "string",
-    "phone": "string",
-    "currentTitle": "string",
-    "experienceYears": 0,
-    "skills": [
-        {{
-        "name": "string",
-        "level": "string",
-        "yearsOfExperience": 0,
-        "isVerified": false
-        }}
-    ],
-    "availability": "string",
-    "matchScore": 0,
-    "aiInsights": {{
-        "coreSkillsScore": 0,
-        "experienceScore": 0,
-        "culturalFitScore": 0,
-        "strengths": [
-        {{
-            "category": "string",
-            "point": "string",
-            "impact": "string",
-            "weight": 0
-        }}
-        ],
-        "concerns": ["string"],
-        "uniqueQualities": ["string"],
-        "skillMatches": [
-        {{
-            "jobRequirement": "string",
-            "candidateSkill": "string",
-            "matchStrength": "string",
-            "confidenceScore": 0
-        }}
-        ],
-        "skillGaps": ["string"],
-        "recommendation": "string",
-        "confidenceLevel": 0,
-        "reasoningSummary": "string"
-    }},
-    "lastAnalyzedAt": "string (ISO datetime)",
-    "notes": ["string"]
-    }}
-
-    ### Guidelines:
-    - Use realistic data (no placeholders like “string”).
-    - Compute scores logically:
-        - **matchScore** = weighted blend of skills, experience, and fit.
-        - **coreSkillsScore**, **experienceScore**, and **culturalFitScore** reflect alignment.
-    - Include **strengths**, **concerns**, **skillMatches** or **skillGaps**.
-    - `lastAnalyzedAt` must be the current date-time in ISO 8601 format.
-    - Include `job_id` from job data.
-    - `availability` and number come from candidate data.
-    - `applicationStatus` should be one of: “screening”, “interview”, “rejected”, or “hired”.
-    - Return **only JSON** — no text, markdown, or backticks.
-
-    ### Data for Evaluation:
-    Job Information:
-    {job_json}
-
-    Candidate Information:
-    {candidate_json}
-
-    ### Output:
-    Return a **single candidate JSON object** following the schema above, applying qualification, experience, and data anomaly validations.
-    """
-
-    prompt = PromptTemplate.from_template(raw_prompt)
-    chain = LLMChain(llm=llm, prompt=prompt)
-    all_results = []
-
-    for job in request.jobs or []:
-        for candidate in request.candidates or []:
-            job_json = json.dumps(job.dict(exclude_none=True), indent=2)
-            candidate_json = json.dumps(candidate.dict(exclude_none=True), indent=2)
-            raw_output = chain.invoke({"job_json": job_json, "candidate_json": candidate_json})
-            output_text = raw_output["text"] if isinstance(raw_output, dict) else raw_output
-            output_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", output_text.strip(), flags=re.DOTALL)
-
-            try:
-                response = json.loads(output_text)
-            except Exception:
-                cleaned = re.search(r"\{.*\}", output_text, re.DOTALL)
-                response = json.loads(cleaned.group(0)) if cleaned else {}
-
-            response["job_id"] = job.job_id or ""
-            response["availability"] = response.get("availability") or getattr(candidate, "availability", "") or ""
-            response["phone"] = response.get("phone") or getattr(candidate, "phone", "") or ""
-            response["currentTitle"] = response.get("currentTitle") or getattr(candidate, "currentTitle", "") or ""
-            response["lastAnalyzedAt"] = datetime.now().isoformat()
-            experience_years = response.get("experienceYears", 0)
-            response["experienceYears"] = map_experience_level(experience_years)
-            response["notes"] = response.get("notes") or []
-
-            for s in response.get("skills", []):
-                if not isinstance(s.get("level"), str):
-                    s["level"] = "Intermediate"
-
-            for s in response.get("aiInsights", {}).get("strengths", []):
-                try:
-                    s["weight"] = float(s.get("weight", 0))
-                except Exception:
-                    s["weight"] = 0.5
-
-            all_results.append(CandidateAnalysisResponse(**response))
-
-    filtered_results = [
-        candidate for candidate in all_results
-        if (candidate.matchScore or 0) >= (request.threshold or 0)
-    ]
-    print(all_results)
-    return filtered_results
+def resume_info(pdf_path):
+    input_text = pdf_to_text(pdf_path)
+    try:
+        candidate = candidate_extraction_chain.run(text=input_text)
+        result = json.loads(candidate.json())
+        if result.get("ai_analysis") and result["ai_analysis"].get("experience_level") is not None:
+            years = result["ai_analysis"]["experience_level"]
+            result["ai_analysis"]["experience_level"] = map_experience_level(years)
+    except Exception:
+        raw_output = llm(f"Extract JSON only from this text:\n{input_text}")
+        try:
+            result = json.loads(raw_output)
+            if result.get("ai_analysis") and result["ai_analysis"].get("experience_level") is not None:
+                years = result["ai_analysis"]["experience_level"]
+                result["ai_analysis"]["experience_level"] = map_experience_level(years)
+        except json.JSONDecodeError as json_err:
+            raise Exception(f"Failed to parse extracted JSON: {str(json_err)}")
+    print(result)
+    return result
