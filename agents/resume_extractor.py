@@ -14,7 +14,7 @@ month = today.month
 year = today.year
 
 key = settings.api_key
-model = settings.model
+model = settings.model1
 llm = GoogleGenerativeAI(
     model=model,
     google_api_key=key,
