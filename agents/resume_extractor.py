@@ -67,7 +67,7 @@ You are an expert information extractor. Extract candidate details from the give
     - If user has ML/AI-related skills → include "AI/ML Engineer"
     - If user has leadership or management experience → include "Team Lead" or "Project Manager"
     - Tags should provide a quick, skill-based snapshot of the candidate’s profile (e.g., "Full Stack Developer", "5+ Years Experience", "Python Expert", "Frontend Specialist", "Cloud Engineer").
-
+    - write maximum possible tags include short form ,full form.
 
 ### Schema:
 {{
