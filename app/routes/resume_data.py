@@ -5,7 +5,7 @@ import os
 from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, validator
-from agents.resume_extractor import resume_info
+from agents.resume_extractor import resume_extract_info
 import logging
 import uuid
 from pathlib import Path
@@ -152,7 +152,7 @@ def save_file_temporarily(file_bytes: bytes, file_name: str, request_id: str) ->
 def extract_resume_data(file_path: Path, file_name: str) -> Dict[str, Any]:
     try:
         logger.info(f"Starting resume extraction for file: {file_name}")
-        resume_data = resume_info(str(file_path))
+        resume_data = resume_extract_info(str(file_path))
 
         logger.info(f"Successfully extracted resume data from {file_name}")
         return {
