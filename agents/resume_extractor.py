@@ -6,8 +6,12 @@ from langchain.output_parsers import PydanticOutputParser
 from agents.types import CandidateAllInOne
 from app.services.text_extract import pdf_to_text
 from config.Settings import settings
+from datetime import datetime
 
+today = datetime.today()
 
+month = today.month
+year = today.year
 
 key = settings.api_key
 model = settings.model
@@ -42,7 +46,7 @@ You are an expert information extractor. Extract candidate details from the give
 - Compute experience_level as **total years of experience**: - Sum the duration of all work experiences. 
 - If start_date and end_date are provided, calculate the exact duration.
 - If only a year or month-year is provided, approximate duration accordingly.
-- If start date and for end date continue mention use current month year.
+- If start date and for end date continue or present or any related things mention use month {month} year {year}.
 - Use the following criteria for `experience_level`:
   - **Entry Level: 0–1 years
   - **Junior Level: 1–3 years
@@ -125,7 +129,7 @@ candidate_extraction_chain = LLMChain(
 def resume_extract_info(pdf_path):
     input_text = pdf_to_text(pdf_path)
     try:
-        candidate = candidate_extraction_chain.run(text=input_text)
+        candidate = candidate_extraction_chain.run(text=input_text,month=month,year=year)
         result = json.loads(candidate.json())  # Parse the JSON string into a dictionary
     except Exception:
         raw_output = llm(f"Extract JSON only from this text:\n{input_text}")
