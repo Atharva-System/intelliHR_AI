@@ -40,7 +40,7 @@ You are an expert information extractor. Extract candidate details from the give
 7. **All technologies mentioned anywhere in the text should be listed in `technical_skills`.** Do not include a `technologies` field under work experience.
 8. Skills must not include tool names unless explicitly listed.
 9. Do not add extra text, explanations, or comments—return JSON only.
-
+10. for experience_year return float value have only value after dot (ex. 2.3,4.5)
 ### AI Analysis Extraction:
 - For ai_analysis, you may provide insights based on the candidate's text even if not explicitly stated.
 - Compute experience_level as **total years of experience**: - Sum the duration of all work experiences. 
