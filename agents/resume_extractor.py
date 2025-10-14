@@ -26,7 +26,7 @@ llm = GoogleGenerativeAI(
 parser = PydanticOutputParser(pydantic_object=CandidateAllInOne)
 
 prompt = PromptTemplate(
-    input_variables=["text"],
+    input_variables=["text","month","year"],
     template = """
 You are an expert information extractor. Extract candidate details from the given text and return a JSON object that strictly matches the CandidateAllInOne schema below.
 
@@ -41,21 +41,31 @@ You are an expert information extractor. Extract candidate details from the give
 8. Skills must not include tool names unless explicitly listed.
 9. Do not add extra text, explanations, or comments—return JSON only.
 10. for experience_year return float value have only value after dot (ex. 2.3,4.5)
+
 ### AI Analysis Extraction:
-- For ai_analysis, you may provide insights based on the candidate's text even if not explicitly stated.
-- Compute experience_level as **total years of experience**: - Sum the duration of all work experiences. 
-- If start_date and end_date are provided, calculate the exact duration.
-- If only a year or month-year is provided, approximate duration accordingly.
-- If start date and for end date continue or present or working any related things mention use month {month} year {year}.
-- Use the following criteria for `experience_level`:
-  - **Entry Level: 0–1 years
-  - **Junior Level: 1–3 years
-  - **Mid Level: 3–5 years
-  - **Mid-Senior Level: 5–7 years
-  - **Senior Level: 7–10 years
-  - **Lead Level: 10+ years
-  - **Principal/Director: 15+ years
-- This section can also include primary domain, key strengths, career progression score (1–10), skill diversity score (1–10), and good_point if apparent.
+- For ai_analysis, calculate total work experience precisely:
+  1. For each work_experience entry, determine duration:
+     - If start_date and end_date are provided, compute months difference.
+     - If end_date is missing:
+       - If is_current=true → use current month {month} and year {year}.
+       - Else → assume end_date is **the start_date of the next work_experience minus one month**.
+     - If end_date is "Till date", "Present", or similar, use current month and year.
+     - If only year is given, assume January as start month and December as end month.
+  2. Sum all months across all work_experience entries.
+  3. Convert total months to years as a float with **one decimal**:
+     - total_years = total_months // 12 + (total_months % 12) / 12
+     - Round **one decimal**, e.g., 14.3, 2.8
+  4. Assign `experience_year` this float value.
+- Determine experience_level based on total years:
+  - Entry Level: 0–1 years
+  - Junior Level: 1–3 years
+  - Mid Level: 3–5 years
+  - Mid-Senior Level: 5–8 years
+  - Senior Level: 8–12 years
+  - Lead Level: 12-15 years
+  - Principal/Director: 15+ years
+- Include primary_domain, key_strengths, career_progression_score (1–10), skill_diversity_score (1–10), and good_point if apparent.
+
 
 ### Tags:
   - Create short, descriptive tags (strings) that summarize the candidate’s expertise, experience, and career focus.
