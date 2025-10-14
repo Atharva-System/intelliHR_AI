@@ -56,14 +56,15 @@ You are an expert information extractor. Extract candidate details from the give
      - total_years = total_months // 12 + (total_months % 12) / 12
      - Round **one decimal**, e.g., 14.3, 2.8
   4. Assign `experience_year` this float value.
-- Determine experience_level based on total years:
-  - Entry Level: 0–1 years
-  - Junior Level: 1–3 years
-  - Mid Level: 3–5 years
-  - Mid-Senior Level: 5–8 years
-  - Senior Level: 8–12 years
-  - Lead Level: 12-15 years
-  - Principal/Director: 15+ years
+- Determine experience_level based on total years (experience_year):
+  - If 0 <= experience_year < 1 → "Entry Level"
+  - If 1 <= experience_year < 3 → "Junior Level"
+  - If 3 <= experience_year < 5 → "Mid Level"
+  - If 5 <= experience_year < 8 → "Mid-Senior Level"
+  - If 8 <= experience_year < 12 → "Senior Level"
+  - If 12 <= experience_year < 15 → "Lead Level"
+  - If experience_year >= 15 → "Principal/Director"
+- Round experience_year to **one decimal** before comparison to determine the level.
 - Include primary_domain, key_strengths, career_progression_score (1–10), skill_diversity_score (1–10), and good_point if apparent.
 
 
