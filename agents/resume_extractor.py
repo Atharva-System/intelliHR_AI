@@ -56,16 +56,16 @@ You are an expert information extractor. Extract candidate details from the give
      - total_years = total_months // 12 + (total_months % 12) / 12
      - Round **one decimal**, e.g., 14.3, 2.8
   4. Assign `experience_year` this float value.
-- Determine experience_level as a numeric value based on total years (experience_year), using this exact mapping:
-  - If 0 <= experience_year < 1 → 1
-  - If 1 <= experience_year < 3 → 2
-  - If 3 <= experience_year < 5 → 3
-  - If 5 <= experience_year < 8 → 4
-  - If 8 <= experience_year < 12 → 5
-  - If 12 <= experience_year < 15 → 6
-  - If experience_year >= 15 → 7
-- Return only the **numeric value** for experience_level (no text label).
-- Ensure experience_year is rounded to one decimal before comparison.
+- Determine experience_level based on total years (experience_year) using the same mapping as the system enum:
+  - If 0 <= experience_year < 1 → "Entry_Level"
+  - If 1 <= experience_year < 3 → "Junior_Level"
+  - If 3 <= experience_year < 5 → "Mid_Level"
+  - If 5 <= experience_year < 8 → "Mid_Senior_Level"
+  - If 8 <= experience_year < 12 → "Senior"
+  - If 12 <= experience_year < 15 → "Lead"
+  - If experience_year >= 15 → "Principal/Director"
+- Ensure the experience_year value is rounded to one decimal before comparison.
+- Always select the correct level strictly based on these numeric thresholds (do not approximate or guess).
 - Include primary_domain, key_strengths, career_progression_score (1–10), skill_diversity_score (1–10), and good_point if apparent.
 
 ### Tags:
@@ -112,7 +112,7 @@ You are an expert information extractor. Extract candidate details from the give
     "soft_skills": [string] | null
   }} | null,
   "ai_analysis": {{
-    "experience_level": int | null,
+    "experience_level": string | null,
     "experience_year": float | null
     "primary_domain": string | null,
     "key_strengths": [string] | null,
