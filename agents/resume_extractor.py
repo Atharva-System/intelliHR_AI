@@ -102,6 +102,7 @@ You are an expert information extractor. Extract candidate details from the give
   }} | null,
   "ai_analysis": {{
     "experience_level": string | null,
+    "experience_year": float | null
     "primary_domain": string | null,
     "key_strengths": [string] | null,
     "career_progression_score": int | null,

@@ -19,6 +19,7 @@ class CandidateRequest(BaseModel):
     email: Optional[EmailStr]
     location: Optional[str]
     experience_level: Optional[str]
+    experience_year: Optional[float]=None
     technical_skills: Optional[List[str]]
     softSkills: Optional[List[str]]
     qualification: Optional[List[str]]
