@@ -64,7 +64,6 @@ You are an expert information extractor. Extract candidate details from the give
   - If 8 <= experience_year < 12 → "Senior Level"
   - If 12 <= experience_year < 15 → "Lead Level"
   - If experience_year >= 15 → "Principal/Director"
-- Round experience_year to **one decimal** before comparison to determine the level.
 - Include primary_domain, key_strengths, career_progression_score (1–10), skill_diversity_score (1–10), and good_point if apparent.
 
 
