@@ -19,6 +19,7 @@ class CandidateRequest(BaseModel):
     email: Optional[EmailStr]
     location: Optional[str]
     experience_level: Optional[str]
+    experience_year: Optional[float]=None
     technical_skills: Optional[List[str]]
     softSkills: Optional[List[str]]
     qualification: Optional[List[str]]
@@ -61,7 +62,7 @@ class CandidateAnalysisResponse(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     currentTitle: Optional[str] = None
-    experienceYears: Optional[int] = 0
+    experienceYears: Optional[float] = None
     skills: Optional[List[dict]] = []
     availability: Optional[str] = None
     matchScore: Optional[float] = 0.0

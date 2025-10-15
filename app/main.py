@@ -7,8 +7,8 @@ from config.Settings import settings
 setup_logging()
 
 app = FastAPI(
-    title="intelliHR-AI",
-    description="AI-powered HR platform",
+    title="talentpulse.AI",
+    description="AI-powered Recruitment platform",
     version="1.0.0",
     debug=settings.debug_mode
 )
