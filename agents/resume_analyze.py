@@ -22,9 +22,9 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
     Your task is to evaluate candidates against job requirements and produce a structured JSON response for each candidate that includes detailed AI insights, match scoring, and reasoning.
 
     ### Instructions:
-    1. Analyze the candidate’s profile in relation to the job description.
+    1. Analyze the candidate's profile in relation to the job description.
     2. Calculate a **matchScore** (0–100) representing overall job fit.
-    3. Populate **aiInsights** fields based on the candidate’s resume and job needs.
+    3. Populate **aiInsights** fields based on the candidate's resume and job needs.
     4. Fill all fields using realistic, data-consistent values.
     5. Return **only valid JSON** — no markdown, no explanations, no extra text.
 
@@ -82,15 +82,14 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
     }}
 
     ### Guidelines:
-    - Use realistic data (no placeholders like “string”).
+    - Use realistic data (no placeholders like "string").
     - Compute scores logically:
         - **matchScore** = weighted blend of skills, experience, and fit.
         - **coreSkillsScore**, **experienceScore**, and **culturalFitScore** reflect alignment.
     - Include 2–3 **strengths**, 1–2 **concerns**, and 2–3 **skillMatches** or **skillGaps**.
     - `lastAnalyzedAt` must be the current date-time in ISO 8601 format.
     - Include `job_id` from job data.
-    - `availability` and `number` come from candidate data.
-    - `applicationStatus` should be one of: “screening”, “interview”, “rejected”, or “hired”.
+    - `availability` and `phone` come from candidate data.
     - Return **only JSON** — no text, markdown, or backticks.
 
     ### Data for Evaluation:
@@ -124,20 +123,26 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
                 cleaned = re.search(r"\{.*\}", output_text, re.DOTALL)
                 response = json.loads(cleaned.group(0)) if cleaned else {}
 
-    
             response["job_id"] = job.job_id or ""
-            response["availability"] = response.get("availability") or getattr(candidate, "availability", "") or ""
+            response["id"] = response.get("id") or getattr(candidate, "candidateId", "") or ""
+            response["firstName"] = response.get("firstName") or getattr(candidate, "name", "").split()[0] if getattr(candidate, "name", None) else ""
+            response["lastName"] = response.get("lastName") or " ".join(getattr(candidate, "name", "").split()[1:]) if getattr(candidate, "name", None) else ""
+            response["email"] = response.get("email") or getattr(candidate, "email", "") or ""
             response["phone"] = response.get("phone") or getattr(candidate, "phone", "") or ""
             response["currentTitle"] = response.get("currentTitle") or getattr(candidate, "currentTitle", "") or ""
+            response["experienceYears"] = response.get("experienceYears") or getattr(candidate, "experience_year", 0) or 0
+            response["availability"] = response.get("availability") or "2 weeks"
             response["lastAnalyzedAt"] = datetime.now().isoformat()
             response["notes"] = response.get("notes") or []
 
-        
             for s in response.get("skills", []):
                 if not isinstance(s.get("level"), str):
                     s["level"] = "Intermediate"
+                if not isinstance(s.get("yearsOfExperience"), (int, float)):
+                    s["yearsOfExperience"] = 0
+                if "isVerified" not in s:
+                    s["isVerified"] = False
 
-        
             for s in response.get("aiInsights", {}).get("strengths", []):
                 try:
                     s["weight"] = float(s.get("weight", 0))

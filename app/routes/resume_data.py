@@ -14,6 +14,9 @@ from config.Settings import settings
 from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
 from agents.resume_analyze import generate_batch_analysis
 from agents.ai_question_generate import generate_interview_questions
+from sklearn.metrics.pairwise import cosine_similarity
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -282,7 +285,6 @@ def parse_resumes(payload: MultipleFiles):
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-
 @router.post("/ai/batch-analyze-resumes", response_model=List[CandidateAnalysisResponse])
 def batch_analyze_resumes_api(request: JobCandidateData):
     try:
@@ -290,24 +292,21 @@ def batch_analyze_resumes_api(request: JobCandidateData):
         num_jobs = len(request.jobs) if request.jobs else 0
         logger.info(f"Received batch analyze request with {num_candidates} candidates and {num_jobs} jobs")
         
-        from sklearn.metrics.pairwise import cosine_similarity
-        from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
-        import numpy as np
-        
         embeddings = FastEmbedEmbeddings()
-        filtered_candidates = []
+        all_results = []
         
-        for candidate in request.candidates or []:
-            candidate_eligible = False
+        # For each job, find eligible candidates and run batch analysis
+        for job in request.jobs or []:
+            job_eligible_candidates = []
             
-            if not candidate.candidate_tag or len(candidate.candidate_tag) == 0:
-                filtered_candidates.append(candidate)
-                continue
-                
-            for job in request.jobs or []:
+            for candidate in request.candidates or []:
+                if not candidate.candidate_tag or len(candidate.candidate_tag) == 0:
+                    job_eligible_candidates.append(candidate)
+                    continue
+                    
                 if not job.job_tag or len(job.job_tag) == 0:
-                    candidate_eligible = True
-                    break
+                    job_eligible_candidates.append(candidate)
+                    continue
                     
                 try:
                     candidate_tag_vector = embeddings.embed_documents(candidate.candidate_tag)
@@ -319,33 +318,32 @@ def batch_analyze_resumes_api(request: JobCandidateData):
                     
                     similarity_percentage = avg_similarity * 100
                     
-                    if similarity_percentage >= (70):
-                        candidate_eligible = True
-                        logger.info(f"Candidate {candidate.candidateId} similarity: {similarity_percentage:.2f}% - ELIGIBLE")
-                        break
+                    if similarity_percentage >= (75):
+                        job_eligible_candidates.append(candidate)
+                        logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId} similarity: {similarity_percentage:.2f}% - ELIGIBLE")
                     else:
-                        logger.info(f"Candidate {candidate.candidateId} similarity: {similarity_percentage:.2f}% - BELOW THRESHOLD")
+                        logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId} similarity: {similarity_percentage:.2f}% - REJECTED")
                         
                 except Exception as e:
-                    logger.warning(f"Error calculating similarity for candidate {candidate.candidateId}: {str(e)}")
-                    candidate_eligible = True
-                    break
+                    logger.warning(f"Error calculating similarity for job {job.job_id} candidate {candidate.candidateId}: {str(e)}")
+                    job_eligible_candidates.append(candidate)
             
-            if candidate_eligible:
-                filtered_candidates.append(candidate)
+            if job_eligible_candidates:
+                logger.info(f"Job {job.job_id} has {len(job_eligible_candidates)} eligible candidates")
+                
+                job_specific_request = JobCandidateData(
+                    jobs=[job],
+                    candidates=job_eligible_candidates,  
+                    threshold=request.threshold,
+                    cosine_score=75
+                )
+                
+                job_results = generate_batch_analysis(job_specific_request)
+                all_results.extend(job_results)
         
-        filtered_request = JobCandidateData(
-            jobs=request.jobs,
-            candidates=filtered_candidates,
-            threshold=request.threshold,
-            cosine_score=70
-        )
+        serialized = [r.dict(exclude_none=True) for r in all_results]
+        logger.info(f"Total analysis results: {len(serialized)}")
         
-        logger.info(f"After cosine similarity filtering: {len(filtered_candidates)} candidates eligible for analysis")
-        
-        responses = generate_batch_analysis(filtered_request)
-        serialized = [r.dict(exclude_none=True) for r in responses]
-
         return serialized
 
     except Exception as e:
