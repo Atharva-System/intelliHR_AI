@@ -289,8 +289,61 @@ def batch_analyze_resumes_api(request: JobCandidateData):
         num_candidates = len(request.candidates) if request.candidates else 0
         num_jobs = len(request.jobs) if request.jobs else 0
         logger.info(f"Received batch analyze request with {num_candidates} candidates and {num_jobs} jobs")
-
-        responses = generate_batch_analysis(request)
+        
+        from sklearn.metrics.pairwise import cosine_similarity
+        from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+        import numpy as np
+        
+        embeddings = FastEmbedEmbeddings()
+        filtered_candidates = []
+        
+        for candidate in request.candidates or []:
+            candidate_eligible = False
+            
+            if not candidate.candidate_tag or len(candidate.candidate_tag) == 0:
+                filtered_candidates.append(candidate)
+                continue
+                
+            for job in request.jobs or []:
+                if not job.job_tag or len(job.job_tag) == 0:
+                    candidate_eligible = True
+                    break
+                    
+                try:
+                    candidate_tag_vector = embeddings.embed_documents(candidate.candidate_tag)
+                    job_tag_vector = embeddings.embed_documents(job.job_tag)
+                    
+                    sim_matrix = cosine_similarity(candidate_tag_vector, job_tag_vector)
+                    max_sim_per_job_tag = sim_matrix.max(axis=0)
+                    avg_similarity = max_sim_per_job_tag.mean()
+                    
+                    similarity_percentage = avg_similarity * 100
+                    
+                    if similarity_percentage >= (70):
+                        candidate_eligible = True
+                        logger.info(f"Candidate {candidate.candidateId} similarity: {similarity_percentage:.2f}% - ELIGIBLE")
+                        break
+                    else:
+                        logger.info(f"Candidate {candidate.candidateId} similarity: {similarity_percentage:.2f}% - BELOW THRESHOLD")
+                        
+                except Exception as e:
+                    logger.warning(f"Error calculating similarity for candidate {candidate.candidateId}: {str(e)}")
+                    candidate_eligible = True
+                    break
+            
+            if candidate_eligible:
+                filtered_candidates.append(candidate)
+        
+        filtered_request = JobCandidateData(
+            jobs=request.jobs,
+            candidates=filtered_candidates,
+            threshold=request.threshold,
+            cosine_score=70
+        )
+        
+        logger.info(f"After cosine similarity filtering: {len(filtered_candidates)} candidates eligible for analysis")
+        
+        responses = generate_batch_analysis(filtered_request)
         serialized = [r.dict(exclude_none=True) for r in responses]
 
         return serialized
@@ -298,7 +351,6 @@ def batch_analyze_resumes_api(request: JobCandidateData):
     except Exception as e:
         logger.error(f"Error generating batch AI analysis: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to generate batch AI analysis")
-
 
 
 @router.post("/generate-ai-question", response_model=AIQuestionResponse)

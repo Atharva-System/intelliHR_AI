@@ -10,6 +10,7 @@ class JobRequest(BaseModel):
     responsibilities: Optional[List[str]]
     softSkills: Optional[List[str]]
     qualification: Optional[List[str]]
+    job_tag: Optional[List[str]]
 
 class CandidateRequest(BaseModel):
     candidateId: Optional[str]
@@ -23,6 +24,7 @@ class CandidateRequest(BaseModel):
     technical_skills: Optional[List[str]]
     softSkills: Optional[List[str]]
     qualification: Optional[List[str]]
+    candidate_tag: Optional[List[str]]
 
 class JobCandidateData(BaseModel):
     jobs: Optional[List[JobRequest]]
