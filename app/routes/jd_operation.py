@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from agents.jd_genrator import return_jd
+from agents.job_taging import return_jd
 from agents.jd_title_suggestion import title_suggests
 from agents.types import JobDescriptionInput, JobTagsOutput
 from app.models.jd_model import JobInput, JobTitleAISuggestInput, JobDescriptionResponse, TitleSuggestionResponse

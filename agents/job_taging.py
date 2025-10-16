@@ -27,8 +27,12 @@ def return_jd(title, experienceRange, job_description, key_responsibility,
 
     Generate a list of relevant tags for this job.
 
-    Return **only valid JSON**, do not include explanations.
+    Return only valid JSON in this exact format:
+    {{
+    "tags": ["tag1", "tag2", "tag3"]
+    }}
     """
+
     
     prompt = PromptTemplate(
         input_variables=["title", "experienceRange", "job_description",
@@ -54,4 +58,17 @@ def return_jd(title, experienceRange, job_description, key_responsibility,
         "nice_to_have": nice_to_have
     })
 
-    return {"tags": raw_output.tags}
+    if isinstance(raw_output, dict):
+        if "tags" in raw_output:
+            return raw_output
+        elif "text" in raw_output and hasattr(raw_output["text"], "tags"):
+            return {"tags": raw_output["text"].tags}
+        elif "text" in raw_output and isinstance(raw_output["text"], dict) and "tags" in raw_output["text"]:
+            return {"tags": raw_output["text"]["tags"]}
+        else:
+            raise ValueError(f"Unexpected dict structure: {raw_output.keys()}")
+    elif hasattr(raw_output, "tags"):
+        return {"tags": raw_output.tags}
+    else:
+        raise ValueError(f"Unexpected output format: {raw_output}")
+
