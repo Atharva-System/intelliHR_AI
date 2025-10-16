@@ -294,7 +294,7 @@ def batch_analyze_resumes_api(request: JobCandidateData):
         
         embeddings = FastEmbedEmbeddings()
         all_results = []
-        similarity_threshold = 0.75
+        similarity_threshold = 0.8
         
         for job in request.jobs or []:
             job_eligible_candidates = []
@@ -308,13 +308,25 @@ def batch_analyze_resumes_api(request: JobCandidateData):
                     continue
                 
                 try:
+                    # 1. Embed tags
                     candidate_tag_vector = embeddings.embed_documents(candidate.candidate_tag)
                     job_tag_vector = embeddings.embed_documents(job.job_tag)
+                    
+                    # 2. Cosine similarity
                     sim_matrix = cosine_similarity(candidate_tag_vector, job_tag_vector)
                     max_sim_per_job_tag = sim_matrix.max(axis=0)
+                    
+                    # 3. Zero out below threshold
                     max_sim_per_job_tag[max_sim_per_job_tag < similarity_threshold] = 0
+                    
+                    # 4. Compute average similarity
                     avg_similarity = max_sim_per_job_tag.mean()
-                    similarity_percentage = avg_similarity * 100
+                    
+                    # 5. Hybrid penalty: fraction of job tags matched above threshold
+                    matched_ratio = np.count_nonzero(max_sim_per_job_tag >= similarity_threshold) / len(job.job_tag)
+                    hybrid_similarity = avg_similarity * matched_ratio
+                    
+                    similarity_percentage = hybrid_similarity * 100
                     
                     if similarity_percentage >= (similarity_threshold * 100):
                         job_eligible_candidates.append(candidate)
