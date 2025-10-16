@@ -68,18 +68,44 @@ You are an expert information extractor. Extract candidate details from the give
 - Always select the correct level strictly based on these numeric thresholds (do not approximate or guess).
 - Include primary_domain, key_strengths, career_progression_score (1–10), skill_diversity_score (1–10), and good_point if apparent.
 
-### Tags:
-  - Create short, descriptive tags (strings) that summarize the candidate’s expertise, experience, and career focus.
-  - Tags should highlight both **explicitly mentioned skills** and **skill-based identity** inferred from combinations of technologies.
-  - generate 1-2 education tag also.
-  - Examples:
-    - If user knows React, HTML, and CSS → include "Frontend Developer"
-    - If user knows React + Python/Django/Node.js → include "Full Stack Developer"
-    - If user mentions Python, FastAPI, or Flask → include "Backend Developer"
-    - If user has ML/AI-related skills → include "AI/ML Engineer"
-    - If user has leadership or management experience → include "Team Lead" or "Project Manager"
-    - Tags should provide a quick, skill-based snapshot of the candidate’s profile (e.g., "Full Stack Developer", "5+ Years Experience", "Python Expert", "Frontend Specialist", "Cloud Engineer").
-    - write maximum possible tags include short form ,full form.
+### Tags (Smart Tag Generation Rules):
+
+You are an expert career intelligence system responsible for generating highly accurate, descriptive, and meaningful tags for the candidate profile.
+Follow these rules carefully
+**Read and analyze the entire input text first** — understand the candidate’s role, domain, and experience before generating tags.
+**Base all tags on facts in the text** — no hallucination.
+**Include both explicit and inferred tags:**
+  - If technologies clearly indicate a job type, infer the correct professional identity.
+  - Combine skills logically to form meaningful roles.
+**Tag Categories:**
+  - **Primary Role / Identity Tags:**  
+    Examples: “Frontend Developer”, “Full Stack Developer”, “Backend Developer”, “QA Engineer”, “Automation Tester”, “Data Analyst”, “AI/ML Engineer”, “Cloud Engineer”, “DevOps Engineer”.
+  - **Experience & Level Tags:**  
+    Examples: “Fresher”, “2+ Years Experience”, “Senior Engineer”, “8+ Years Experience”, “Mid-Level Professional”.
+  - **Core Technical Skill Tags:**  
+    Examples: “Python”, “Django”, “React.js”, “FastAPI”, “AWS”, “SQL”, “Selenium”, “Postman”, “TensorFlow”.
+  - **Domain / Role Context Tags:**  
+    Examples: “Software Testing”, “Web Development”, “Machine Learning”, “Cloud Computing”, “Project Management”.
+  - **Leadership or Responsibility Tags (if applicable):**  
+    Examples: “Team Lead”, “Project Manager”, “Scrum Master”, “Mentor”.
+  - **Education Tags (1–2 only):**  
+    Examples: “B.Tech Computer Science”, “MCA Graduate”, “B.Sc Information Technology”, “M.Tech AI”.
+**Inference Guidelines:**
+   - React + HTML + CSS → “Frontend Developer”
+   - React + Django / Node.js / Python → “Full Stack Developer”
+   - Python + Flask/FastAPI → “Backend Developer”
+   - Selenium / JMeter / Postman → “QA Engineer”, “Automation Tester”
+   - TensorFlow / NLP / LLM / Deep Learning → “AI/ML Engineer”
+   - AWS / Docker / Jenkins / Kubernetes → “DevOps Engineer”, “Cloud Engineer”
+   - Leadership keywords (lead, manage, mentor) → “Team Lead”, “Project Manager”
+**Output Style:**
+   - Return a JSON array of strings.
+   - Include both short forms and full forms where relevant (e.g., “AI”, “Artificial Intelligence”).
+   - Avoid duplicates or redundant phrasing.
+   - Maximize tag diversity without reducing accuracy.
+**Goal:**  
+   Generate tags that provide a **concise, skill-based snapshot** of the candidate’s expertise, identity, and educational background.
+
 
 ### Schema:
 {{
