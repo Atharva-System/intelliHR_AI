@@ -295,7 +295,8 @@ def batch_analyze_resumes_api(request: JobCandidateData):
         embeddings = FastEmbedEmbeddings()
         all_results = []
         
-        # For each job, find eligible candidates and run batch analysis
+        similarity_threshold = 0.75
+        
         for job in request.jobs or []:
             job_eligible_candidates = []
             
@@ -303,22 +304,26 @@ def batch_analyze_resumes_api(request: JobCandidateData):
                 if not candidate.candidate_tag or len(candidate.candidate_tag) == 0:
                     job_eligible_candidates.append(candidate)
                     continue
-                    
                 if not job.job_tag or len(job.job_tag) == 0:
                     job_eligible_candidates.append(candidate)
                     continue
-                    
+                
                 try:
                     candidate_tag_vector = embeddings.embed_documents(candidate.candidate_tag)
                     job_tag_vector = embeddings.embed_documents(job.job_tag)
-                    
+                   
                     sim_matrix = cosine_similarity(candidate_tag_vector, job_tag_vector)
                     max_sim_per_job_tag = sim_matrix.max(axis=0)
-                    avg_similarity = max_sim_per_job_tag.mean()
+                    
+                    filtered_sims = max_sim_per_job_tag[max_sim_per_job_tag >= similarity_threshold]
+                    if len(filtered_sims) > 0:
+                        avg_similarity = filtered_sims.mean()
+                    else:
+                        avg_similarity = 0
                     
                     similarity_percentage = avg_similarity * 100
                     
-                    if similarity_percentage >= (75):
+                    if similarity_percentage >= (similarity_threshold * 100):
                         job_eligible_candidates.append(candidate)
                         logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId} similarity: {similarity_percentage:.2f}% - ELIGIBLE")
                     else:
@@ -326,16 +331,16 @@ def batch_analyze_resumes_api(request: JobCandidateData):
                         
                 except Exception as e:
                     logger.warning(f"Error calculating similarity for job {job.job_id} candidate {candidate.candidateId}: {str(e)}")
-                    job_eligible_candidates.append(candidate)
-            
+                    job_eligible_candidates.append(candidate)  
+
             if job_eligible_candidates:
                 logger.info(f"Job {job.job_id} has {len(job_eligible_candidates)} eligible candidates")
                 
                 job_specific_request = JobCandidateData(
                     jobs=[job],
-                    candidates=job_eligible_candidates,  
+                    candidates=job_eligible_candidates,
                     threshold=request.threshold,
-                    cosine_score=75
+                    cosine_score=int(similarity_threshold * 100)
                 )
                 
                 job_results = generate_batch_analysis(job_specific_request)
@@ -345,6 +350,10 @@ def batch_analyze_resumes_api(request: JobCandidateData):
         logger.info(f"Total analysis results: {len(serialized)}")
         
         return serialized
+    
+    except Exception as e:
+        logger.error(f"Error in batch_analyze_resumes_api: {str(e)}")
+        return []
 
     except Exception as e:
         logger.error(f"Error generating batch AI analysis: {str(e)}", exc_info=True)
