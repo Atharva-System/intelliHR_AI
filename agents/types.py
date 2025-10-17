@@ -89,3 +89,17 @@ class FeedbackResponse(BaseModel):
     overallAssessment: str = Field(..., description="Overall summary assessment of the candidate")
     strengths: List[str] = Field(..., description="List of strengths identified")
     suggestedRating: int = Field(..., description="Suggested rating on a scale (e.g. 1-5)")
+
+class JobDescriptionInput(BaseModel):
+    title: str
+    experienceRange: str
+    job_description: str
+    key_responsibility: List[str]
+    technical_skill: List[str]
+    soft_skill: List[str]
+    education: List[str]
+    nice_to_have: List[str]
+
+
+class JobTagsOutput(BaseModel):
+    tags: List[str]

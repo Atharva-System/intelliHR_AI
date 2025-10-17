@@ -14,6 +14,9 @@ from config.Settings import settings
 from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
 from agents.resume_analyze import generate_batch_analysis
 from agents.ai_question_generate import generate_interview_questions
+from sklearn.metrics.pairwise import cosine_similarity
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -282,23 +285,78 @@ def parse_resumes(payload: MultipleFiles):
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-
 @router.post("/ai/batch-analyze-resumes", response_model=List[CandidateAnalysisResponse])
 def batch_analyze_resumes_api(request: JobCandidateData):
     try:
         num_candidates = len(request.candidates) if request.candidates else 0
         num_jobs = len(request.jobs) if request.jobs else 0
         logger.info(f"Received batch analyze request with {num_candidates} candidates and {num_jobs} jobs")
-
-        responses = generate_batch_analysis(request)
-        serialized = [r.dict(exclude_none=True) for r in responses]
-
+        
+        embeddings = FastEmbedEmbeddings()
+        all_results = []
+        similarity_threshold = 0.8
+        
+        for job in request.jobs or []:
+            job_eligible_candidates = []
+            
+            for candidate in request.candidates or []:
+                if not candidate.candidate_tag or len(candidate.candidate_tag) == 0:
+                    job_eligible_candidates.append(candidate)
+                    continue
+                if not job.job_tag or len(job.job_tag) == 0:
+                    job_eligible_candidates.append(candidate)
+                    continue
+                
+                try:
+                    # 1. Embed tags
+                    candidate_tag_vector = embeddings.embed_documents(candidate.candidate_tag)
+                    job_tag_vector = embeddings.embed_documents(job.job_tag)
+                    
+                    # 2. Cosine similarity
+                    sim_matrix = cosine_similarity(candidate_tag_vector, job_tag_vector)
+                    max_sim_per_job_tag = sim_matrix.max(axis=0)
+                    
+                    # 3. Zero out below threshold
+                    max_sim_per_job_tag[max_sim_per_job_tag < similarity_threshold] = 0
+                    
+                    # 4. Compute average similarity
+                    avg_similarity = max_sim_per_job_tag.mean()
+                    
+                    # 5. Hybrid penalty: fraction of job tags matched above threshold
+                    matched_ratio = np.count_nonzero(max_sim_per_job_tag >= similarity_threshold) / len(job.job_tag)
+                    hybrid_similarity = avg_similarity * matched_ratio
+                    
+                    similarity_percentage = hybrid_similarity * 100
+                    
+                    if similarity_percentage >= (similarity_threshold * 100):
+                        job_eligible_candidates.append(candidate)
+                        logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId} similarity: {similarity_percentage:.2f}% - ELIGIBLE")
+                    else:
+                        logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId} similarity: {similarity_percentage:.2f}% - REJECTED")
+                        
+                except Exception as e:
+                    logger.warning(f"Error calculating similarity for job {job.job_id} candidate {candidate.candidateId}: {str(e)}")
+                    job_eligible_candidates.append(candidate)
+            
+            if job_eligible_candidates:
+                logger.info(f"Job {job.job_id} has {len(job_eligible_candidates)} eligible candidates")
+                
+                job_specific_request = JobCandidateData(
+                    jobs=[job],
+                    candidates=job_eligible_candidates,
+                    threshold=request.threshold,
+                    cosine_score=int(similarity_threshold * 100)
+                )
+                job_results = generate_batch_analysis(job_specific_request)
+                all_results.extend(job_results)
+        
+        serialized = [r.dict(exclude_none=True) for r in all_results]
+        logger.info(f"Total analysis results: {len(serialized)}")
         return serialized
-
+    
     except Exception as e:
         logger.error(f"Error generating batch AI analysis: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to generate batch AI analysis")
-
 
 
 @router.post("/generate-ai-question", response_model=AIQuestionResponse)
