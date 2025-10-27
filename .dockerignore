@@ -1,0 +1,28 @@
+# Byte-compiled / cache
+__pycache__/
+*.pyc
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+
+# Local env files
+.env
+.env.*
+
+# Tests and local artifacts
+tests/
+downloaded_files/
+
+# Git
+.git
+.gitignore
+
+# Editor files
+.vscode/
+.idea/

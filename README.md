@@ -1,4 +1,4 @@
-# intelliHR-AI
+# talentpulse.AI
 
 ## Project Overview
 intelliHR-AI is an AI-powered platform designed to enhance HR processes through automation, analytics, and intelligent decision-making. The project is structured for scalability and maintainability, following best practices in Python application development.
@@ -76,6 +76,23 @@ This will start the FastAPI server with auto-reload enabled for development. By 
 ```bash
 pytest -v
 ```
+ 
+### Docker
+
+Build and run the project in a container. These commands build the image (tagged `talentpulse.ai:latest`) and run it, mapping port 8000 and loading environment variables from a local `.env` file.
+
+```bash
+# Build the Docker image
+docker build -t talentpulse.ai:latest .
+
+# Run the container (maps host 8000 -> container 8000 and loads .env)
+docker run -p 8000:8000 --env-file .env talentpulse.ai:latest
+```
+
+Notes:
+- Ensure you have Docker installed and the Docker daemon running.
+- If your user cannot access the Docker daemon, you may need to run the commands with `sudo` or add your user to the `docker` group.
+- Adjust the image tag or port mapping as needed for your environment.
 ## Notes
 - Ensure Python 3.8+ is installed.
 - For any missing dependencies, add them to `requirements.txt` and re-run the install step.
