@@ -61,6 +61,10 @@ coverage.xml
 # dotenv
 .env
 .env.*
+# Allow specific env files
+!.env.dev
+!.env.stage
+!.env.prod
 
 # mypy
 .mypy_cache/
