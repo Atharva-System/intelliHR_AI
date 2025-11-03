@@ -1,49 +1,26 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional, List, Any
 from datetime import datetime
 
 # -----------------------------
-# Nested Structures
+# Candidate Section
 # -----------------------------
-
-class SkillItem(BaseModel):
-    name: str
-    level: Optional[str] = None
-    rating: Optional[int] = None
-
-class TechnicalSkills(BaseModel):
-    skills: List[SkillItem]
-
-class SoftSkills(BaseModel):
-    skills: List[SkillItem]
-
-class EducationItem(BaseModel):
-    degree: str
-    field: str
-    institute: str
-    year: int
-
-class Qualification(BaseModel):
-    education: List[EducationItem]
-
-class CandidateTag(BaseModel):
-    tags: List[str]
+class WorkExperienceItem(BaseModel):
+    company: str
+    end_date: Optional[str] = None
+    position: Optional[str] = None
+    is_current: Optional[bool] = None
+    start_date: Optional[str] = None
 
 class AiAnalysis(BaseModel):
-    summary: str
-    keywords: List[str]
+    good_point: Optional[str] = None
+    key_strengths: Optional[List[str]] = None
+    primary_domain: Optional[str] = None
+    experience_year: Optional[float] = None
+    experience_level: Optional[str] = None
+    skill_diversity_score: Optional[int] = None
+    career_progression_score: Optional[int] = None
 
-class WorkExperienceItem(BaseModel):
-    companyName: str
-    title: str
-    duration: str
-
-class WorkExperience(BaseModel):
-    companies: List[WorkExperienceItem]
-
-# -----------------------------
-# Candidate Data Model
-# -----------------------------
 class CandidateDataContext(BaseModel):
     candidateId: str
     name: str
@@ -52,14 +29,14 @@ class CandidateDataContext(BaseModel):
     location: Optional[str] = None
     currentTitle: Optional[str] = None
     experienceLevel: Optional[str] = None
-    experienceYear: Optional[int] = None
+    experienceYear: Optional[Any] = None
     experienceRange: Optional[int] = None
-    technicalSkills: Optional[TechnicalSkills] = None
-    softSkills: Optional[SoftSkills] = None
-    qualification: Optional[Qualification] = None
-    candidateTag: Optional[CandidateTag] = None
+    technicalSkills: Optional[List[str]] = None
+    softSkills: Optional[List[str]] = None
+    qualification: Optional[List[Any]] = None
+    candidateTag: Optional[Any] = None
     aiAnalysis: Optional[AiAnalysis] = None
-    workExperience: Optional[WorkExperience] = None
+    workExperience: Optional[List[WorkExperienceItem]] = None
     linkedInUrl: Optional[str] = None
     portfolioUrl: Optional[str] = None
     status: Optional[int] = None
@@ -67,20 +44,55 @@ class CandidateDataContext(BaseModel):
     isHrShortlisted: bool = False
 
 # -----------------------------
-# Matching Data Model
+# Matching Section
 # -----------------------------
-class MatchedSkill(BaseModel):
-    skill: str
-    score: float
+class SkillItem(BaseModel):
+    name: str
+    level: Optional[str] = None
+    isVerified: Optional[bool] = None
+    yearsOfExperience: Optional[float] = None
 
-class MatchDetails(BaseModel):
-    matchedSkills: List[MatchedSkill]
-    unmatchedSkills: List[str]
+class StrengthItem(BaseModel):
+    point: str
+    impact: str
+    weight: float
+    category: str
+
+class SkillMatchItem(BaseModel):
+    matchStrength: str
+    candidateSkill: str
+    jobRequirement: str
+    confidenceScore: int
 
 class AiInsights(BaseModel):
-    summary: str
-    suggestedRole: str
-    recommendation: str
+    concerns: Optional[List[str]] = None
+    skillGaps: Optional[List[str]] = None
+    strengths: Optional[List[StrengthItem]] = None
+    skillMatches: Optional[List[SkillMatchItem]] = None
+    recommendation: Optional[str] = None
+    confidenceLevel: Optional[int] = None
+    coreSkillsScore: Optional[int] = None
+    experienceScore: Optional[int] = None
+    uniqueQualities: Optional[List[str]] = None
+    culturalFitScore: Optional[int] = None
+    reasoningSummary: Optional[str] = None
+
+class MatchDetails(BaseModel):
+    Id: Optional[str] = None
+    email: Optional[str] = None
+    notes: Optional[List[str]] = None
+    phone: Optional[str] = None
+    skills: Optional[List[SkillItem]] = None
+    lastName: Optional[str] = None
+    firstName: Optional[str] = None
+    aiInsights: Optional[AiInsights] = None
+    matchScore: Optional[int] = None
+    availability: Optional[str] = None
+    currentTitle: Optional[str] = None
+    isShortlisted: Optional[bool] = None
+    lastAnalyzedAt: Optional[datetime] = None
+    experienceYears: Optional[float] = None
+    applicationStatus: Optional[str] = None
 
 class AIMatchingDataContext(BaseModel):
     id: str
