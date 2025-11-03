@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routes import feedback_operation, jd_operation, jd_refine, resume_data
+from app.routes import feedback_operation, jd_operation, jd_refine, resume_data,chatbot
 from fastapi.middleware.cors import CORSMiddleware
 from config.logging import setup_logging
 from config.Settings import settings
@@ -19,6 +19,7 @@ app.include_router(jd_operation.router, prefix=api_v1, tags=["Job Descriptions"]
 app.include_router(jd_refine.router, prefix=api_v1, tags=["Job Refinement"])
 app.include_router(resume_data.router, prefix=api_v1, tags=["Resume Processing"])
 app.include_router(feedback_operation.router, prefix=api_v1, tags=["Feedback Processing"])
+app.include_router(chatbot.router, prefix=api_v1, tags=["chatbot"])
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
