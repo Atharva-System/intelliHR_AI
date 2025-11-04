@@ -294,8 +294,8 @@ def batch_analyze_resumes_api(request: JobCandidateData):
         
         embeddings = FastEmbedEmbeddings()
         all_results = []
-        similarity_threshold = 0.8  # cosine similarity threshold
-        min_match_ratio = 0.6      # minimum 60% tags should match
+        similarity_threshold = 0.6  # cosine similarity threshold
+        min_match_ratio = 0.5      # minimum 60% tags should match
         
         for job in request.jobs or []:
             job_eligible_candidates = []
