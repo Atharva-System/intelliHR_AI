@@ -353,6 +353,7 @@ def batch_analyze_resumes_api(request: JobCandidateData):
         raise HTTPException(status_code=500, detail="Failed to generate batch AI analysis")
 
 
+
 @router.post("/generate-ai-question", response_model=AIQuestionResponse)
 def ai_question_generator(request: AIQuestionRequest):
     try:
