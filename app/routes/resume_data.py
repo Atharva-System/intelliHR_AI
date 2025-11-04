@@ -316,13 +316,10 @@ def batch_analyze_resumes_api(request: JobCandidateData):
                     sim_matrix = cosine_similarity(candidate_tag_vector, job_tag_vector)
                     max_sim_per_job_tag = sim_matrix.max(axis=0)
                     
-                    # 3. Compute average similarity (unfiltered)
+                    # ✅ Balanced hybrid formula (no zeroing)
                     avg_similarity = max_sim_per_job_tag.mean()
-                    
-                    # 4. Hybrid penalty: fraction of job tags matched above threshold
                     matched_ratio = np.count_nonzero(max_sim_per_job_tag >= similarity_threshold) / len(job.job_tag)
-                    hybrid_similarity = avg_similarity * matched_ratio
-                    
+                    hybrid_similarity = (avg_similarity + matched_ratio) / 2
                     similarity_percentage = hybrid_similarity * 100
                     
                     if similarity_percentage >= (similarity_threshold * 100):
