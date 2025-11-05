@@ -6,15 +6,19 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_google_genai import GoogleGenerativeAI
 from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
-from config.Settings import settings
+from config.Settings import  settings
+from config.Settings import api_key, settings
+import google.generativeai as genai
 
+genai.configure(api_key=api_key)
+model = genai.GenerativeModel(settings.model)
 def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysisResponse]:
     llm = GoogleGenerativeAI(
-        model=settings.model,
-        google_api_key=settings.api_key,
-        temperature=0.2,
-        max_output_tokens=5000
-    )
+    model=settings.model,
+    google_api_key=api_key,
+    temperature=settings.temperature,
+    max_output_tokens=settings.max_output_tokens
+)
 
     raw_prompt = """
     You are an expert AI recruiter and resume analyzer.

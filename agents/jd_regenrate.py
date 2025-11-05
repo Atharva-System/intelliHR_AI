@@ -7,11 +7,18 @@ from langchain_google_genai import GoogleGenerativeAI
 from agents.types import Enhancecertifications, Enhanceeducation, EnhancekeyResponsibilities, EnhanceniceToHave, EnhancesoftSkills, EnhancetechnicalSkills
 from config.Settings import settings
 load_dotenv()
+from config.Settings import api_key, settings
+import google.generativeai as genai
 
-key = settings.api_key
-model = settings.model
+genai.configure(api_key=api_key)
+model = genai.GenerativeModel(settings.model)
 
-llm = GoogleGenerativeAI(model=model, google_api_key=key, temperature=0.2, max_output_tokens=10000)
+llm = GoogleGenerativeAI(
+    model=settings.model,
+    google_api_key=api_key,
+    temperature=settings.temperature,
+    max_output_tokens=settings.max_output_tokens
+)
 
 
 
