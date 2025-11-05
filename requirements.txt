@@ -88,3 +88,4 @@ pydantic-settings
 scikit-learn
 fastembed
 langchain-community
+google-generativeai
