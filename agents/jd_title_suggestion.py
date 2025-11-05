@@ -5,9 +5,11 @@ from langchain_google_genai import GoogleGenerativeAI
 from agents.types import JobDescriptionTitleAISuggest
 from app.models.jd_model import JobTitleAISuggestInput
 from config.Settings import settings
+from config.Settings import api_key, settings
+import google.generativeai as genai
 
-key = settings.api_key
-model = settings.model
+genai.configure(api_key=api_key)
+model = genai.GenerativeModel(settings.model)
 
 def title_suggests(job:JobTitleAISuggestInput):
     job_title_prompt = PromptTemplate(
@@ -46,7 +48,12 @@ def title_suggests(job:JobTitleAISuggestInput):
     parser = PydanticOutputParser(pydantic_object=JobDescriptionTitleAISuggest)
 
 
-    llm = GoogleGenerativeAI(model=model, google_api_key=key,temperature=0.2,max_output_tokens=10000)
+    llm = GoogleGenerativeAI(
+    model=settings.model,
+    google_api_key=api_key,
+    temperature=settings.temperature,
+    max_output_tokens=settings.max_output_tokens
+)
 
     chain = LLMChain(llm=llm,prompt=job_title_prompt,verbose=True,output_parser=parser)
 

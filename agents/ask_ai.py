@@ -11,14 +11,17 @@ from config.Settings import settings
 
 FILE_PATH = "candidate_data.txt"
 
-key = settings.api_key
-model = settings.model
+from config.Settings import api_key, settings
+import google.generativeai as genai
+
+genai.configure(api_key=api_key)
+model = genai.GenerativeModel(settings.model)
 
 llm = GoogleGenerativeAI(
-    model=model,
-    google_api_key=key,
-    temperature=0.2,
-    max_output_tokens=10000
+    model=settings.model,
+    google_api_key=api_key,
+    temperature=settings.temperature,
+    max_output_tokens=settings.max_output_tokens
 )
 
 memory = ConversationBufferMemory()

@@ -13,14 +13,16 @@ today = datetime.today()
 month = today.month
 year = today.year
 
-key = settings.api_key
-model = settings.model1
-llm = GoogleGenerativeAI(
-    model=model,
-    google_api_key=key,
-    temperature=0.2,
-    max_output_tokens=8000,
+from config.Settings import api_key, settings
+import google.generativeai as genai
 
+genai.configure(api_key=api_key)
+model = genai.GenerativeModel(settings.model)
+llm = GoogleGenerativeAI(
+    model=settings.model,
+    google_api_key=api_key,
+    temperature=settings.temperature,
+    max_output_tokens=settings.max_output_tokens
 )
 
 parser = PydanticOutputParser(pydantic_object=CandidateAllInOne)
