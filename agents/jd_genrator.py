@@ -20,7 +20,7 @@ def return_jd(title, experienceRange, department, subDepartment):
     Experience Range: {experienceRange}
     Department: {department}
     Sub-Department: {subDepartment}
-
+    If title ,experincerange,department,subdepartment as not valid so return response in all field empty.
     Based on this, generate a complete job description in **JSON format** with the following fields:
 
     - keyResponsibilities: list of strings (3-7 main responsibilities)
