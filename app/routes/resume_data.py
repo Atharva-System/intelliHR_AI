@@ -10,6 +10,7 @@ import logging
 import uuid
 from pathlib import Path
 from app.models.resume_analyze_model import AIQuestionRequest, AIQuestionResponse
+from app.services.ai_match_score import calculate_weighted_coverage_score, check_domain_relevance
 from config.Settings import settings
 from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
 from agents.resume_analyze import generate_batch_analysis
@@ -294,69 +295,77 @@ def batch_analyze_resumes_api(request: JobCandidateData):
         
         embeddings = FastEmbedEmbeddings()
         all_results = []
-        similarity_threshold = 0.6  # cosine similarity threshold
-        min_match_ratio = 0.5      # minimum 60% tags should match
+        
+        # Thresholds
+        DOMAIN_RELEVANCE_THRESHOLD = 45  # Minimum score to be considered "in domain"
+        MINIMUM_ELIGIBLE_SCORE = 60      # Minimum score for final eligibility
         
         for job in request.jobs or []:
             job_eligible_candidates = []
             
             for candidate in request.candidates or []:
+                # Auto-include if either has no tags
                 if not candidate.candidate_tag or len(candidate.candidate_tag) == 0:
+                    logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId}: "
+                               f"No candidate tags, auto-include")
                     job_eligible_candidates.append(candidate)
                     continue
+                    
                 if not job.job_tag or len(job.job_tag) == 0:
+                    logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId}: "
+                               f"No job tags, auto-include")
                     job_eligible_candidates.append(candidate)
                     continue
                 
                 try:
-                    # 1. Embed tags
-                    candidate_tag_vector = embeddings.embed_documents(candidate.candidate_tag)
-                    job_tag_vector = embeddings.embed_documents(job.job_tag)
+                    # STEP 1: Check domain relevance first
+                    relevance_score = check_domain_relevance(
+                        candidate.candidate_tag,
+                        job.job_tag,
+                        embeddings
+                    )
                     
-                    # 2. Cosine similarity between all candidate/job tags
-                    sim_matrix = cosine_similarity(candidate_tag_vector, job_tag_vector)
-                    max_sim_per_job_tag = sim_matrix.max(axis=0)
+                    if relevance_score < DOMAIN_RELEVANCE_THRESHOLD:
+                        logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId}: "
+                                   f"Relevance {relevance_score:.1f}% - OUT OF DOMAIN (IGNORED)")
+                        continue  # Skip this candidate entirely
                     
-                    # 3. Compute match ratio and average similarities
-                    matched_sims = max_sim_per_job_tag[max_sim_per_job_tag >= similarity_threshold]
-                    matched_ratio = len(matched_sims) / len(job.job_tag)
+                    # STEP 2: Calculate detailed match score for relevant candidates
+                    match_score = calculate_weighted_coverage_score(
+                        candidate.candidate_tag,
+                        job.job_tag,
+                        embeddings
+                    )
                     
-                    # 4. Conditional scoring logic
-                    if matched_ratio >= min_match_ratio:
-                        similarity_percentage = matched_sims.mean() * 100 if len(matched_sims) > 0 else 0
-                        logger.debug(f"Job {job.job_id} - Candidate {candidate.candidateId}: "
-                                     f"Matched ratio {matched_ratio:.2f}, using matched avg")
-                    else:
-                        similarity_percentage = max_sim_per_job_tag.mean() * 100
-                        logger.debug(f"Job {job.job_id} - Candidate {candidate.candidateId}: "
-                                     f"Matched ratio {matched_ratio:.2f}, using overall avg")
-                    
-                   
-                    if similarity_percentage >= (similarity_threshold * 100):
+                    # STEP 3: Determine eligibility
+                    if match_score >= MINIMUM_ELIGIBLE_SCORE:
                         job_eligible_candidates.append(candidate)
-                        logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId} "
-                                    f"similarity: {similarity_percentage:.2f}% - ELIGIBLE")
+                        logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId}: "
+                                   f"Relevance {relevance_score:.1f}%, Score {match_score:.1f}% - ELIGIBLE")
                     else:
-                        logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId} "
-                                    f"similarity: {similarity_percentage:.2f}% - REJECTED")
+                        logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId}: "
+                                   f"Relevance {relevance_score:.1f}%, Score {match_score:.1f}% - REJECTED")
                         
                 except Exception as e:
-                    logger.warning(f"Error calculating similarity for job {job.job_id} "
-                                   f"candidate {candidate.candidateId}: {str(e)}")
+                    logger.warning(f"Error calculating match for job {job.job_id} "
+                                  f"candidate {candidate.candidateId}: {str(e)}")
                     job_eligible_candidates.append(candidate)
             
-           
+            # Process eligible candidates
             if job_eligible_candidates:
-                logger.info(f"Job {job.job_id} has {len(job_eligible_candidates)} eligible candidates")
+                logger.info(f"Job {job.job_id} has {len(job_eligible_candidates)} eligible candidates "
+                           f"(filtered from {num_candidates} total)")
                 
                 job_specific_request = JobCandidateData(
                     jobs=[job],
                     candidates=job_eligible_candidates,
                     threshold=request.threshold,
-                    cosine_score=int(similarity_threshold * 100)
+                    cosine_score=MINIMUM_ELIGIBLE_SCORE
                 )
                 job_results = generate_batch_analysis(job_specific_request)
                 all_results.extend(job_results)
+            else:
+                logger.warning(f"Job {job.job_id} has NO eligible candidates after filtering")
      
         serialized = [r.dict(exclude_none=True) for r in all_results]
         logger.info(f"Total analysis results: {len(serialized)}")
@@ -365,7 +374,6 @@ def batch_analyze_resumes_api(request: JobCandidateData):
     except Exception as e:
         logger.error(f"Error generating batch AI analysis: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to generate batch AI analysis")
-
 
 
 @router.post("/generate-ai-question", response_model=AIQuestionResponse)
