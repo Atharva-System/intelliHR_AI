@@ -16,58 +16,103 @@ model = genai.GenerativeModel(settings.model)
 
 def generate_interview_questions(request: AIQuestionRequest) -> AIQuestionResponse:
     llm = GoogleGenerativeAI(
-    model=settings.model,
-    google_api_key=api_key,
-    temperature=settings.temperature,
-    max_output_tokens=settings.max_output_tokens
-)
+        model=settings.model,
+        google_api_key=api_key,
+        temperature=settings.temperature,
+        max_output_tokens=settings.max_output_tokens
+    )
+    
     prompt = """
-    You are a professional technical interviewer.
+You are a professional technical interviewer conducting a structured analysis.
 
-    Based on the job requirements and the candidate's resume, generate a comprehensive analysis including an AI score, summary, and advice for the interview process.
+**CRITICAL RULES:**
+1. ONLY use technologies and skills mentioned in the Job Requirements
+2. ONLY ask questions related to the candidate's actual technical skills
+3. DO NOT introduce technologies not present in either the job or candidate profile
+4. Questions must be relevant to BOTH the job role AND candidate's experience
+5. This analysis works for ALL domains - technology, healthcare, finance, marketing, engineering, etc.
 
-    Important:
-    - The technologies, domains, and interview questions **must strictly align** with the job role provided in the input.
-    - Do **not** include unrelated technologies (e.g., Python, Data Science, Machine Learning) unless they appear in the job requirements.
+**JOB AND CANDIDATE DATA:**
+{input_data}
 
-    Instructions:
-    1. Provide an **ai_score** (0-100) reflecting the candidate's overall technical fit for the role.
-    2. Include a **summary** with:
-    ...
-    3. Include **advice** with:
-    ...
-    4. When generating **questions_to_ask**, ensure they are relevant to the **job technologies**:
-    - Example: If the job mentions React, Node.js, and MongoDB, focus questions on those areas.
-    - Do not include questions about other stacks (Python, ML, etc.).
+**YOUR TASK:**
+Generate a JSON response analyzing the candidate's fit for this specific job role.
 
-    Format:
-    Respond with a **JSON object** matching the following structure:
-    {{
-        "ai_score": int,
-        "summary": {{
-            "experience_match": {{
-                "years_requirement_met": bool,
-                "experience_level_fit": str
-            }},
-            "overall_match": str,
-            "skill_match": {{
-                "matched_skills": [str],
-                "missing_skills": [str],
-                "skill_gap_percentage": int
-            }}
+**ANALYSIS GUIDELINES:**
+
+1. **ai_score** (0-100): Calculate based on:
+   - Percentage of matched skills from job requirements
+   - Experience level alignment
+   - Overall suitability for the role
+
+2. **summary.experience_match**:
+   - years_requirement_met: true if candidate's experience level meets or exceeds job requirement, false otherwise
+   - experience_level_fit: Rate as "excellent" (exceeds requirements), "good" (meets requirements), "fair" (close to requirements), or "poor" (below requirements)
+
+3. **summary.skill_match**:
+   - matched_skills: List ONLY skills that appear in BOTH job technical_skills AND candidate technical_skills (exact or semantically similar matches)
+   - missing_skills: List ONLY job technical_skills that are NOT in candidate technical_skills
+   - skill_gap_percentage: Calculate as (count of missing_skills / count of total job technical_skills) * 100
+
+4. **summary.overall_match**: 
+   - Write 1-2 sentences summarizing the candidate's fit for this specific role
+   - Mention key matched skills and significant gaps
+
+5. **advice.interview_focus_areas**: 
+   - List 3-5 specific areas to focus on during the interview
+   - ONLY mention skills, experiences, or competencies that exist in the candidate's profile
+   - Focus on verifying depth and practical application of matched skills
+   - If there are transferable skills, mention how to assess them
+
+6. **advice.next_steps**:
+   - Provide 2-4 actionable next steps for the interviewer or hiring process
+   - Be specific and practical for this role and candidate combination
+
+7. **advice.questions_to_ask**:
+   - Generate 5-8 interview questions
+   - **MANDATORY**: Questions must ONLY be about skills, experiences, or competencies the candidate actually possesses
+   - **MANDATORY**: Questions must relate to the job requirements and responsibilities
+   - **DO NOT** ask about missing skills or technologies the candidate doesn't have
+   - Include questions that assess both technical depth and practical application
+   - Include scenario-based questions relevant to the job responsibilities
+   - Make questions open-ended and interview-ready
+   - Ensure questions are domain-appropriate for this specific role
+
+**VALIDATION CHECKLIST (Internal - Do Not Output):**
+Before generating questions, verify:
+- Is this skill in the candidate's technical_skills list? → If NO, don't ask about it
+- Does this question relate to the job requirements or responsibilities? → If NO, don't include it
+- Can the candidate answer this based on their stated experience? → If NO, rephrase or remove it
+
+**OUTPUT FORMAT:**
+Return ONLY a valid JSON object with this exact structure (no additional text, markdown, or code blocks):
+{{
+    "ai_score": <integer 0-100>,
+    "summary": {{
+        "experience_match": {{
+            "years_requirement_met": <boolean>,
+            "experience_level_fit": "<string>"
         }},
-        "advice": {{
-            "interview_focus_areas": [str],
-            "next_steps": [str],
-            "questions_to_ask": [str]
+        "overall_match": "<string>",
+        "skill_match": {{
+            "matched_skills": ["<skill1>", "<skill2>", ...],
+            "missing_skills": ["<skill1>", "<skill2>", ...],
+            "skill_gap_percentage": <integer>
         }}
+    }},
+    "advice": {{
+        "interview_focus_areas": ["<area1>", "<area2>", "<area3>", ...],
+        "next_steps": ["<step1>", "<step2>", "<step3>", ...],
+        "questions_to_ask": ["<question1>", "<question2>", "<question3>", ...]
     }}
+}}
 
-    Return a **JSON object only**, no markdown, no explanations, no triple backticks.
-
-    Job Requirement and Resume Data:
-    {{requirement_data}}
-    """
+**CRITICAL REMINDERS:**
+- Return ONLY valid JSON with no additional text
+- All questions must be answerable by the candidate based on their stated skills and experience
+- Focus on the intersection of job requirements and candidate capabilities
+- Adapt your language and focus to match the domain of the job role
+"""
 
     chain = LLMChain(
         llm=llm,
@@ -75,17 +120,29 @@ def generate_interview_questions(request: AIQuestionRequest) -> AIQuestionRespon
     )
 
     try:
-        input_data = {"requirement_data": request.dict()}
+        input_data = {"input_data": request.dict()}
         print(f"Input to chain.invoke: {json.dumps(input_data, indent=2)}")
         
         raw_output = chain.invoke(input_data)
         output_text = raw_output["text"] if isinstance(raw_output, dict) else raw_output
+        
+        # Clean up markdown formatting
         output_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", output_text.strip(), flags=re.DOTALL)
+        
         print(f"Raw LLM output: {output_text}")
         
         response_data = json.loads(output_text)
-        return AIQuestionResponse(**response_data)
+        
+        # Validate and return
+        validated_response = AIQuestionResponse(**response_data)
+        print(f"Successfully generated response with AI score: {validated_response.ai_score}")
+        
+        return validated_response
+        
     except json.JSONDecodeError as e:
+        print(f"JSON Decode Error: {e}")
+        print(f"Failed output text: {output_text}")
         raise ValueError(f"Failed to parse LLM output as JSON: {e}")
     except Exception as e:
+        print(f"General Error: {str(e)}")
         raise ValueError(f"Failed to process LLM request: {e}")

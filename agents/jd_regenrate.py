@@ -34,7 +34,7 @@ Title: {title}
 Experience Range: {experienceRange}
 Department: {department}
 Sub-Department: {subDepartment}
-
+If title ,experincerange,department,subdepartment,format_instructions as not valid so return response in all field empty.
 {format_instructions}
 """,
     partial_variables={"format_instructions": key_resp_parser.get_format_instructions()},
@@ -55,7 +55,7 @@ Title: {title}
 Experience Range: {experienceRange}
 Department: {department}
 Sub-Department: {subDepartment}
-
+If title ,experincerange,department,subdepartment,format_instructions as not valid so return response in all field empty.
 {format_instructions}
 """,
     partial_variables={"format_instructions": soft_parser.get_format_instructions()},
@@ -76,7 +76,7 @@ Title: {title}
 Experience Range: {experienceRange}
 Department: {department}
 Sub-Department: {subDepartment}
-
+If title ,experincerange,department,subdepartment,format_instructions as not valid so return response in all field empty.
 {format_instructions}
 """,
     partial_variables={"format_instructions": tech_parser.get_format_instructions()},
@@ -97,7 +97,7 @@ Title: {title}
 Experience Range: {experienceRange}
 Department: {department}
 Sub-Department: {subDepartment}
-
+If title ,experincerange,department,subdepartment,format_instructions as not valid so return response in all field empty.
 {format_instructions}
 """,
     partial_variables={"format_instructions": edu_parser.get_format_instructions()},
@@ -118,7 +118,7 @@ Title: {title}
 Experience Range: {experienceRange}
 Department: {department}
 Sub-Department: {subDepartment}
-
+If title ,experincerange,department,subdepartment,format_instructions as not valid so return response in all field empty.
 {format_instructions}
 """,
     partial_variables={"format_instructions": cert_parser.get_format_instructions()},
@@ -139,7 +139,7 @@ Title: {title}
 Experience Range: {experienceRange}
 Department: {department}
 Sub-Department: {subDepartment}
-
+If title ,experincerange,department,subdepartment,format_instructions as not valid so return response in all field empty.
 {format_instructions}
 """,
     partial_variables={"format_instructions": nice_parser.get_format_instructions()},
