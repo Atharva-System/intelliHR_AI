@@ -42,10 +42,10 @@ intelliHR-AI/
    python3 -m venv venv
 
    # On Windows PowerShell
-   .\venv\Scripts\Activate.ps1
+   .\.venv\Scripts\Activate.ps1
 
    # On Windows CMD
-   .\venv\Scripts\activate.bat
+   .\.venv\Scripts\activate.bat
 
    # On Unix or MacOS
    source venv/bin/activate
