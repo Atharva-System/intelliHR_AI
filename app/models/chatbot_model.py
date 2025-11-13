@@ -18,8 +18,8 @@ class AiAnalysis(BaseModel):
     primary_domain: Optional[str] = None
     experience_year: Optional[float] = None
     experience_level: Optional[str] = None
-    skill_diversity_score: Optional[int] = None
-    career_progression_score: Optional[int] = None
+    skill_diversity_score: Optional[float] = None
+    career_progression_score: Optional[float] = None
 
 class CandidateDataContext(BaseModel):
     candidateId: str
@@ -30,7 +30,7 @@ class CandidateDataContext(BaseModel):
     currentTitle: Optional[str] = None
     experienceLevel: Optional[str] = None
     experienceYear: Optional[Any] = None
-    experienceRange: Optional[int] = None
+    experienceRange: Optional[float] = None
     technicalSkills: Optional[List[str]] = None
     softSkills: Optional[List[str]] = None
     qualification: Optional[List[Any]] = None
@@ -39,8 +39,8 @@ class CandidateDataContext(BaseModel):
     workExperience: Optional[List[WorkExperienceItem]] = None
     linkedInUrl: Optional[str] = None
     portfolioUrl: Optional[str] = None
-    status: Optional[int] = None
-    managerStatus: Optional[int] = None
+    status: Optional[float] = None
+    managerStatus: Optional[float] = None
     isHrShortlisted: bool = False
 
 # -----------------------------
@@ -62,7 +62,7 @@ class SkillMatchItem(BaseModel):
     matchStrength: str
     candidateSkill: str
     jobRequirement: str
-    confidenceScore: int
+    confidenceScore: float
 
 class AiInsights(BaseModel):
     concerns: Optional[List[str]] = None
@@ -70,11 +70,11 @@ class AiInsights(BaseModel):
     strengths: Optional[List[StrengthItem]] = None
     skillMatches: Optional[List[SkillMatchItem]] = None
     recommendation: Optional[str] = None
-    confidenceLevel: Optional[int] = None
-    coreSkillsScore: Optional[int] = None
-    experienceScore: Optional[int] = None
+    confidenceLevel: Optional[float] = None
+    coreSkillsScore: Optional[float] = None
+    experienceScore: Optional[float] = None
     uniqueQualities: Optional[List[str]] = None
-    culturalFitScore: Optional[int] = None
+    culturalFitScore: Optional[float] = None
     reasoningSummary: Optional[str] = None
 
 class MatchDetails(BaseModel):
@@ -86,7 +86,7 @@ class MatchDetails(BaseModel):
     lastName: Optional[str] = None
     firstName: Optional[str] = None
     aiInsights: Optional[AiInsights] = None
-    matchScore: Optional[int] = None
+    matchScore: Optional[float] = None
     availability: Optional[str] = None
     currentTitle: Optional[str] = None
     isShortlisted: Optional[bool] = None
