@@ -1,16 +1,16 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List,Optional
 
 class FeedbackItem(BaseModel):
-    id: str
-    content: str
-    keywords: List[str]
+    id: Optional[str] = None
+    content: Optional[str] = None
+    keywords: Optional[List[str]] = None
 
 class FeedbackResponse(BaseModel):
-    aiRecommendation: str
-    concerns: List[str]
-    confidenceScore: int
-    nextSteps: List[str]
-    overallAssessment: str
-    strengths: List[str]
-    suggestedRating: int
+    aiRecommendation: Optional[str] = None
+    concerns: Optional[List[str]] = None
+    confidenceScore: Optional[int]=None
+    nextSteps: Optional[List[str]] = None
+    overallAssessment: Optional[str] = None
+    strengths: Optional[List[str]] = None
+    suggestedRating: Optional[int]=None

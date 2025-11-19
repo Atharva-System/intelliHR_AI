@@ -2,27 +2,27 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 
 class JobDescriptionOutline(BaseModel):
-    keyResponsibilities: List[str] = Field(..., description="List of key responsibilities")
-    softSkills: List[str] = Field(..., description="List of soft skills")
-    technicalSkills: List[str] = Field(..., description="List of technical skills")
-    education: List[str] = Field(..., description="Educational qualifications")
+    keyResponsibilities: Optional[List[str]] = Field(..., description="List of key responsibilities")
+    softSkills: Optional[List[str]] = Field(..., description="List of soft skills")
+    technicalSkills: Optional[List[str]] = Field(..., description="List of technical skills")
+    education: Optional[List[str]] = Field(..., description="Educational qualifications")
     certifications: Optional[List[str]] = Field(None, description="List of certifications (optional)")
     niceToHave: Optional[List[str]] = Field(None, description="List of nice-to-have skills (optional)")
 
 class JobDescriptionTitleAISuggest(BaseModel):
-    title: List[str] = Field(..., description="list of title")
+    title: Optional[List[str]] = Field(..., description="list of title")
 
 class EnhancekeyResponsibilities(BaseModel):
-    keyResponsibilities: List[str] = Field(..., description="List of key responsibilities")
+    keyResponsibilities: Optional[List[str]] = Field(..., description="List of key responsibilities")
 
 class EnhancesoftSkills(BaseModel):
-    softSkills: List[str] = Field(..., description="List of soft skills")
+    softSkills: Optional[List[str]] = Field(..., description="List of soft skills")
 
 class EnhancetechnicalSkills(BaseModel):
-    technicalSkills: List[str] = Field(..., description="List of technical skills")  # Fixed typo
+    technicalSkills: Optional[List[str]] = Field(..., description="List of technical skills")  # Fixed typo
 
 class Enhanceeducation(BaseModel):
-    education: List[str] = Field(..., description="Educational qualifications")
+    education: Optional[List[str]] = Field(..., description="Educational qualifications")
 
 class Enhancecertifications(BaseModel):
     certifications: Optional[List[str]] = Field(None, description="List of certifications (optional)")
@@ -75,31 +75,31 @@ class CandidateAllInOne(BaseModel):
     education: Optional[List[Education]] = None
     skills: Optional[Skills] = None
     ai_analysis: Optional[AIAnalysis] = None
-    tags: list[str]
+    tags: Optional[List[str]] = []
 
 
 class AskAI(BaseModel):
     response: str
 
 class FeedbackResponse(BaseModel):
-    aiRecommendation: str = Field(..., description="Final recommendation like yes/no/maybe")
-    concerns: List[str] = Field(..., description="List of concerns about the candidate")
-    confidenceScore: int = Field(..., description="Confidence score (0-100)")
-    nextSteps: List[str] = Field(..., description="List of next steps to take")
-    overallAssessment: str = Field(..., description="Overall summary assessment of the candidate")
-    strengths: List[str] = Field(..., description="List of strengths identified")
-    suggestedRating: int = Field(..., description="Suggested rating on a scale (e.g. 1-5)")
+    aiRecommendation: Optional[str] = Field(..., description="Final recommendation like yes/no/maybe")
+    concerns: Optional[List[str]] = Field(..., description="List of concerns about the candidate")
+    confidenceScore: Optional[int] = Field(..., description="Confidence score (0-100)")
+    nextSteps: Optional[List[str]] = Field(..., description="List of next steps to take")
+    overallAssessment: Optional[str] = Field(..., description="Overall summary assessment of the candidate")
+    strengths: Optional[List[str]] = Field(..., description="List of strengths identified")
+    suggestedRating: Optional[int] = Field(..., description="Suggested rating on a scale (e.g. 1-5)")
 
 class JobDescriptionInput(BaseModel):
-    title: str
-    experienceRange: str
-    job_description: str
-    key_responsibility: List[str]
-    technical_skill: List[str]
-    soft_skill: List[str]
-    education: List[str]
-    nice_to_have: List[str]
+    title: Optional[str]
+    experienceRange: Optional[str]
+    job_description: Optional[str]
+    key_responsibility: Optional[List[str]]
+    technical_skill: Optional[List[str]]
+    soft_skill: Optional[List[str]]
+    education: Optional[List[str]]
+    nice_to_have: Optional[List[str]]
 
 
 class JobTagsOutput(BaseModel):
-    tags: List[str]
+    tags: Optional[List[str]]
