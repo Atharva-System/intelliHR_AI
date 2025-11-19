@@ -14,6 +14,16 @@ genai.configure(api_key=api_key)
 model = genai.GenerativeModel(settings.model)
 
 
+def escape_prompt(text: str) -> str:
+    """
+    Escapes all { } except for {input_data}
+    which LangChain should keep as a variable.
+    """
+    text = text.replace("{", "{{").replace("}", "}}")
+    text = text.replace("{{input_data}}", "{input_data}")
+    return text
+
+
 def generate_interview_questions(request: AIQuestionRequest) -> AIQuestionResponse:
     llm = GoogleGenerativeAI(
         model=settings.model,
@@ -23,7 +33,7 @@ def generate_interview_questions(request: AIQuestionRequest) -> AIQuestionRespon
     )
     
     
-    prompt = """
+    original_prompt = """
     You are a professional technical interviewer conducting a structured analysis.
 
     **CRITICAL RULES:**
@@ -33,7 +43,7 @@ def generate_interview_questions(request: AIQuestionRequest) -> AIQuestionRespon
     4. Questions must be relevant to BOTH the job role AND candidate's experience
     5. Generate interview questions based FIRST on the candidate's skills and experience, and THEN ensure they align with the job requirements
     6. This analysis works for ALL domains - technology, healthcare, finance, marketing, engineering, etc.
-
+    7. Questions must be short
     **JOB AND CANDIDATE DATA:**
     {input_data}
 
@@ -71,7 +81,7 @@ def generate_interview_questions(request: AIQuestionRequest) -> AIQuestionRespon
     - Be specific and practical for this role and candidate combination
 
     7. **advice.questions_to_ask**:
-    - Generate 5-8 interview questions
+    - Generate 10-12 interview questions
     - Questions must be based FIRST on the candidate's skills, experience, and competencies
     - Then filter to ensure each question ALSO aligns with the job requirements
     - Do NOT ask about missing skills or technologies the candidate doesn't have
@@ -114,8 +124,9 @@ def generate_interview_questions(request: AIQuestionRequest) -> AIQuestionRespon
     - Focus on the intersection of job requirements and candidate capabilities
     - Generate questions based FIRST on candidate profile and THEN ensure alignment with job requirements
     - Adapt your language and focus to match the domain of the job role
-
     """
+
+    prompt = escape_prompt(original_prompt)
 
     chain = LLMChain(
         llm=llm,
@@ -129,14 +140,13 @@ def generate_interview_questions(request: AIQuestionRequest) -> AIQuestionRespon
         raw_output = chain.invoke(input_data)
         output_text = raw_output["text"] if isinstance(raw_output, dict) else raw_output
         
-        # Clean up markdown formatting
+        
         output_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", output_text.strip(), flags=re.DOTALL)
         
         print(f"Raw LLM output: {output_text}")
         
         response_data = json.loads(output_text)
         
-        # Validate and return
         validated_response = AIQuestionResponse(**response_data)
         print(f"Successfully generated response with AI score: {validated_response.ai_score}")
         
