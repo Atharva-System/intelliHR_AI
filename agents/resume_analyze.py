@@ -57,7 +57,7 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
     matchScore: <integer 0-100>
 
     # Skills Array (Tabular Format for Token Efficiency)
-    skills[N]{name,level,yearsOfExperience,isVerified}:
+    skills[N]{{name,level,yearsOfExperience,isVerified}}:
     # Example Row: Python,Intermediate,3.5,True
     
     aiInsights:
@@ -66,14 +66,14 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
       culturalFitScore: <integer 0-100>
       
       # Strengths Array (Tabular Format)
-      strengths[N]{category,point,impact,weight}:
+      strengths[N]{{category,point,impact,weight}}:
       # Example Row: Leadership,Manages teams of 5+,High,0.9
       
       concerns[N]: <string>, <string>, ...
       uniqueQualities[N]: <string>, <string>, ...
       
       # Skill Matches Array (Tabular Format)
-      skillMatches[N]{jobRequirement,candidateSkill,matchStrength,confidenceScore}:
+      skillMatches[N]{{jobRequirement,candidateSkill,matchStrength,confidenceScore}}:
       # Example Row: 5 years of Python,Python 7 years experience,Strong,0.95
       
       skillGaps[N]: <string>, <string>, ...
