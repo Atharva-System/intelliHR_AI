@@ -6,7 +6,7 @@ from datetime import datetime
 # Candidate Section
 # -----------------------------
 class WorkExperienceItem(BaseModel):
-    company: str
+    company: Optional[str] = None
     end_date: Optional[str] = None
     position: Optional[str] = None
     is_current: Optional[bool] = None
@@ -22,9 +22,9 @@ class AiAnalysis(BaseModel):
     career_progression_score: Optional[float] = None
 
 class CandidateDataContext(BaseModel):
-    candidateId: str
-    name: str
-    email: str
+    candidateId: Optional[str] = None
+    name: Optional[str] = None
+    email: Optional[str] = None
     phone: Optional[str] = None
     location: Optional[str] = None
     currentTitle: Optional[str] = None
@@ -41,28 +41,28 @@ class CandidateDataContext(BaseModel):
     portfolioUrl: Optional[str] = None
     status: Optional[float] = None
     managerStatus: Optional[float] = None
-    isHrShortlisted: bool = False
+    isHrShortlisted: Optional[bool] = False
 
 # -----------------------------
 # Matching Section
 # -----------------------------
 class SkillItem(BaseModel):
-    name: str
+    name: Optional[str]
     level: Optional[str] = None
     isVerified: Optional[bool] = None
     yearsOfExperience: Optional[float] = None
 
 class StrengthItem(BaseModel):
-    point: str
-    impact: str
-    weight: float
-    category: str
+    point: Optional[str] = None
+    impact: Optional[str] = None
+    weight: Optional[float] = None
+    category: Optional[str] = None
 
 class SkillMatchItem(BaseModel):
-    matchStrength: str
-    candidateSkill: str
-    jobRequirement: str
-    confidenceScore: float
+    matchStrength: Optional[str] = None
+    candidateSkill: Optional[str] = None
+    jobRequirement: Optional[str] = None
+    confidenceScore: Optional[float] = None
 
 class AiInsights(BaseModel):
     concerns: Optional[List[str]] = None
@@ -95,10 +95,10 @@ class MatchDetails(BaseModel):
     applicationStatus: Optional[str] = None
 
 class AIMatchingDataContext(BaseModel):
-    id: str
-    jobId: str
-    candidateId: str
-    jobTitle: str
+    id: Optional[str] = None
+    jobId: Optional[str] = None
+    candidateId: Optional[str] = None
+    jobTitle: Optional[str] = None
     overallMatchScore: Optional[float] = None
     technicalMatchScore: Optional[float] = None
     experienceMatchScore: Optional[float] = None
@@ -116,7 +116,7 @@ class CandidateMatchingRequest(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    question: str
+    question: Optional[str] = None
 
 class ChatResponse(BaseModel):
-    answer: str
+    answer: Optional[str] = None
