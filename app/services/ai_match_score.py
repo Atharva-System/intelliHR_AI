@@ -60,7 +60,7 @@ def check_domain_relevance_strict(
     best_per_job = sim_matrix.max(axis=0)
     
     # Count how many job tags have at least a decent match
-    decent_threshold = 0.5
+    decent_threshold = 0.7
     num_decent_matches = (best_per_job >= decent_threshold).sum()
     coverage_ratio = num_decent_matches / len(job_tags)
     
@@ -106,7 +106,7 @@ def calculate_relevance_and_score_combined(
     candidate_tags: List[str],
     job_tags: List[str],
     embeddings,
-    min_relevance: float = 0.45
+    min_relevance: float = 0.65
 ) -> tuple[bool, float]:
     """
     Single function that checks both relevance and calculates score.
