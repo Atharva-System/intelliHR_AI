@@ -10,7 +10,7 @@ import logging
 import uuid
 from pathlib import Path
 from app.models.resume_analyze_model import AIQuestionRequest, AIQuestionResponse
-from app.services.ai_match_score import calculate_weighted_coverage_score, check_domain_relevance
+from app.services.ai_match_score import calculate_weighted_coverage_score, check_domain_relevance, check_domain_relevance_strict
 from config.Settings import settings
 from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
 from agents.resume_analyze import generate_batch_analysis
@@ -297,7 +297,7 @@ def batch_analyze_resumes_api(request: JobCandidateData):
         all_results = []
         
         # Thresholds
-        DOMAIN_RELEVANCE_THRESHOLD = 60  # Minimum score to be considered "in domain"
+        DOMAIN_RELEVANCE_THRESHOLD = 75  # Minimum score to be considered "in domain" (increased from 60 to filter out false positives)
         MINIMUM_ELIGIBLE_SCORE = 60      # Minimum score for final eligibility
         
         for job in request.jobs or []:
@@ -318,8 +318,9 @@ def batch_analyze_resumes_api(request: JobCandidateData):
                     continue
                 
                 try:
-                    # STEP 1: Check domain relevance first
-                    relevance_score = check_domain_relevance(
+                    # STEP 1: Check domain relevance first using STRICTER algorithm
+                    # This requires multiple good matches, not just one high similarity
+                    relevance_score = check_domain_relevance_strict(
                         candidate.candidate_tag,
                         job.job_tag,
                         embeddings
@@ -327,7 +328,7 @@ def batch_analyze_resumes_api(request: JobCandidateData):
                     
                     if relevance_score < DOMAIN_RELEVANCE_THRESHOLD:
                         logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId}: "
-                                   f"Relevance {relevance_score:.1f}% - OUT OF DOMAIN (IGNORED)")
+                                   f"Relevance {relevance_score:.1f}% - OUT OF DOMAIN (threshold: {DOMAIN_RELEVANCE_THRESHOLD}%) - FILTERED OUT")
                         continue  # Skip this candidate entirely
                     
                     # STEP 2: Calculate detailed match score for relevant candidates
