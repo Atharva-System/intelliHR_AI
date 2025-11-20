@@ -60,7 +60,7 @@ def check_domain_relevance_strict(
     best_per_job = sim_matrix.max(axis=0)
     
     # Count how many job tags have at least a decent match
-    decent_threshold = 0.5
+    decent_threshold = 0.45
     num_decent_matches = (best_per_job >= decent_threshold).sum()
     coverage_ratio = num_decent_matches / len(job_tags)
     

@@ -297,8 +297,8 @@ def batch_analyze_resumes_api(request: JobCandidateData):
         all_results = []
         
         # Thresholds
-        DOMAIN_RELEVANCE_THRESHOLD = 60 
-        MINIMUM_ELIGIBLE_SCORE = 60      
+        DOMAIN_RELEVANCE_THRESHOLD = 50 
+        MINIMUM_ELIGIBLE_SCORE = 50      
         
         for job in request.jobs or []:
             job_eligible_candidates = []
