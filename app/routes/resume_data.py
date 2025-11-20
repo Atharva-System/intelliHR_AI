@@ -10,7 +10,7 @@ import logging
 import uuid
 from pathlib import Path
 from app.models.resume_analyze_model import AIQuestionRequest, AIQuestionResponse
-from app.services.ai_match_score import calculate_weighted_coverage_score, check_domain_relevance
+from app.services.ai_match_score import calculate_weighted_coverage_score, check_domain_relevance, check_domain_relevance_strict
 from config.Settings import settings
 from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
 from agents.resume_analyze import generate_batch_analysis
@@ -287,7 +287,7 @@ def parse_resumes(payload: MultipleFiles):
 
 
 @router.post("/ai/batch-analyze-resumes", response_model=List[CandidateAnalysisResponse])
-async def batch_analyze_resumes_api(request: JobCandidateData):
+def batch_analyze_resumes_api(request: JobCandidateData):
     try:
         num_candidates = len(request.candidates) if request.candidates else 0
         num_jobs = len(request.jobs) if request.jobs else 0
@@ -297,8 +297,8 @@ async def batch_analyze_resumes_api(request: JobCandidateData):
         all_results = []
         
         # Thresholds
-        DOMAIN_RELEVANCE_THRESHOLD = 45  # Minimum score to be considered "in domain"
-        MINIMUM_ELIGIBLE_SCORE = 60      # Minimum score for final eligibility
+        DOMAIN_RELEVANCE_THRESHOLD = 60 
+        MINIMUM_ELIGIBLE_SCORE = 60      
         
         for job in request.jobs or []:
             job_eligible_candidates = []
@@ -318,8 +318,9 @@ async def batch_analyze_resumes_api(request: JobCandidateData):
                     continue
                 
                 try:
-                    # STEP 1: Check domain relevance first
-                    relevance_score = check_domain_relevance(
+                    # STEP 1: Check domain relevance first using STRICTER algorithm
+                    # This requires multiple good matches, not just one high similarity
+                    relevance_score = check_domain_relevance_strict(
                         candidate.candidate_tag,
                         job.job_tag,
                         embeddings
@@ -327,7 +328,7 @@ async def batch_analyze_resumes_api(request: JobCandidateData):
                     
                     if relevance_score < DOMAIN_RELEVANCE_THRESHOLD:
                         logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId}: "
-                                   f"Relevance {relevance_score:.1f}% - OUT OF DOMAIN (IGNORED)")
+                                   f"Relevance {relevance_score:.1f}% - OUT OF DOMAIN (threshold: {DOMAIN_RELEVANCE_THRESHOLD}%) - FILTERED OUT")
                         continue  # Skip this candidate entirely
                     
                     # STEP 2: Calculate detailed match score for relevant candidates
@@ -362,7 +363,7 @@ async def batch_analyze_resumes_api(request: JobCandidateData):
                     threshold=request.threshold,
                     cosine_score=MINIMUM_ELIGIBLE_SCORE
                 )
-                job_results = await generate_batch_analysis(job_specific_request)
+                job_results = generate_batch_analysis(job_specific_request)
                 all_results.extend(job_results)
             else:
                 logger.warning(f"Job {job.job_id} has NO eligible candidates after filtering")

@@ -13,7 +13,7 @@ def return_jd(title, experienceRange, job_description, key_responsibility,
               technical_skill, soft_skill, education, nice_to_have):
     
     template = """
-    You are a professional tag generator expert.
+    You are a professional job role identifier expert.
 
     You are given the basic job information:
 
@@ -26,11 +26,21 @@ def return_jd(title, experienceRange, job_description, key_responsibility,
     Education: {education}
     Nice to Have: {nice_to_have}
 
-    Generate a list of relevant tags for this job.
+    ### CRITICAL INSTRUCTION:
+    Generate EXACTLY 3 tags that identify the JOB ROLE ONLY.
 
-    Return only valid JSON in this exact format:
+    **Tag Rules:**
+    1. Focus ONLY on job role/position identity
+    2. DO NOT include technical skills, tools, or technologies
+    3. DO NOT include soft skills or methodologies
+    4. Tags must clearly identify the PROFESSIONAL ROLE
+    5. Analyze the title, responsibilities, and technical skills to infer the correct role
+    6. Generate 3 variations of the same role (e.g., specific title, general role, alternative title)
+
+    **Output Format:**
+    Return EXACTLY 3 role-specific tags in valid JSON:
     {{
-    "tags": ["tag1", "tag2", "tag3"]
+    "tags": ["Role Tag 1", "Role Tag 2", "Role Tag 3"]
     }}
     """
 

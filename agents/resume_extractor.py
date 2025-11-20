@@ -70,43 +70,33 @@ You are an expert information extractor. Extract candidate details from the give
 - Always select the correct level strictly based on these numeric thresholds (do not approximate or guess).
 - Include primary_domain, key_strengths, career_progression_score (1–10), skill_diversity_score (1–10), and good_point if apparent.
 
-### Tags (Smart Tag Generation Rules):
+### Tags (Job Role Identification):
 
-You are an expert career intelligence system responsible for generating highly accurate, descriptive, and meaningful tags for the candidate profile.
-Follow these rules carefully
-**Read and analyze the entire input text first** — understand the candidate’s role, domain, and experience before generating tags.
-**Base all tags on facts in the text** — no hallucination.
-**Include both explicit and inferred tags:**
-  - If technologies clearly indicate a job type, infer the correct professional identity.
-  - Combine skills logically to form meaningful roles.
-**Tag Categories:**
-  - **Primary Role / Identity Tags:**  
-    Examples: “Frontend Developer”, “Full Stack Developer”, “Backend Developer”, “QA Engineer”, “Automation Tester”, “Data Analyst”, “AI/ML Engineer”, “Cloud Engineer”, “DevOps Engineer”.
-  - **Experience & Level Tags:**  
-    Examples: “Fresher”, “2+ Years Experience”, “Senior Engineer”, “8+ Years Experience”, “Mid-Level Professional”.
-  - **Core Technical Skill Tags:**  
-    Examples: “Python”, “Django”, “React.js”, “FastAPI”, “AWS”, “SQL”, “Selenium”, “Postman”, “TensorFlow”.
-  - **Domain / Role Context Tags:**  
-    Examples: “Software Testing”, “Web Development”, “Machine Learning”, “Cloud Computing”, “Project Management”.
-  - **Leadership or Responsibility Tags (if applicable):**  
-    Examples: “Team Lead”, “Project Manager”, “Scrum Master”, “Mentor”.
-  - **Education Tags (1–2 only):**  
-    Examples: “B.Tech Computer Science”, “MCA Graduate”, “B.Sc Information Technology”, “M.Tech AI”.
-**Inference Guidelines:**
-   - React + HTML + CSS → “Frontend Developer”
-   - React + Django / Node.js / Python → “Full Stack Developer”
-   - Python + Flask/FastAPI → “Backend Developer”
-   - Selenium / JMeter / Postman → “QA Engineer”, “Automation Tester”
-   - TensorFlow / NLP / LLM / Deep Learning → “AI/ML Engineer”
-   - AWS / Docker / Jenkins / Kubernetes → “DevOps Engineer”, “Cloud Engineer”
-   - Leadership keywords (lead, manage, mentor) → “Team Lead”, “Project Manager”
-**Output Style:**
-   - Return a JSON array of strings.
-   - Include both short forms and full forms where relevant (e.g., “AI”, “Artificial Intelligence”).
-   - Avoid duplicates or redundant phrasing.
-   - Maximize tag diversity without reducing accuracy.
-**Goal:**  
-   Generate tags that provide a **concise, skill-based snapshot** of the candidate’s expertise, identity, and educational background.
+You are an expert at identifying candidate job roles from their resume.
+
+**CRITICAL INSTRUCTION:**
+Generate EXACTLY 3 tags that identify the CANDIDATE'S JOB ROLE ONLY.
+
+**Tag Rules:**
+1. Focus ONLY on job role/position identity
+2. DO NOT include technical skills, tools, or technologies
+3. DO NOT include soft skills, methodologies, or education
+4. Tags must clearly identify the PROFESSIONAL ROLE the candidate is suited for
+5. Analyze work experience, technical skills, and responsibilities to infer the correct role
+6. Generate 3 variations of the same role (e.g., specific title, general role, alternative title)
+
+**CRITICAL RULES:**
+- Infer the PRIMARY role based on work experience and skills
+- A candidate focused on testing/QA should get testing-related role tags
+- A candidate focused on development should get development-related role tags
+- Do not mix domains (e.g., don't tag a developer as a tester or vice versa)
+
+**Output Format:**
+Return EXACTLY 3 role-specific tags in a JSON array:
+["Role Tag 1", "Role Tag 2", "Role Tag 3"]
+
+**Goal:**
+Generate tags that will ACCURATELY MATCH the candidate with jobs in the SAME PROFESSIONAL DOMAIN.
 
 
 ### Schema:
