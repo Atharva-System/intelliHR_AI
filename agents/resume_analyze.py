@@ -12,13 +12,15 @@ import google.generativeai as genai
 
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel(settings.model)
-def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysisResponse]:
+import asyncio
+
+async def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysisResponse]:
     llm = GoogleGenerativeAI(
-    model=settings.model,
-    google_api_key=api_key,
-    temperature=settings.temperature,
-    max_output_tokens=settings.max_output_tokens
-)
+        model=settings.model,
+        google_api_key=api_key,
+        temperature=settings.temperature,
+        max_output_tokens=settings.max_output_tokens
+    )
 
     raw_prompt = """
     You are an expert AI recruiter and resume analyzer.
@@ -110,14 +112,13 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
     prompt = PromptTemplate.from_template(raw_prompt)
     chain = LLMChain(llm=llm, prompt=prompt)
 
-    all_results = []
+    async def process_candidate(job, candidate):
+        job_json = json.dumps(job.dict(exclude_none=True), indent=2)
+        candidate_json = json.dumps(candidate.dict(exclude_none=True), indent=2)
 
-    for job in request.jobs or []:
-        for candidate in request.candidates or []:
-            job_json = json.dumps(job.dict(exclude_none=True), indent=2)
-            candidate_json = json.dumps(candidate.dict(exclude_none=True), indent=2)
-
-            raw_output = chain.invoke({"job_json": job_json, "candidate_json": candidate_json})
+        try:
+            # Use ainvoke for async execution
+            raw_output = await chain.ainvoke({"job_json": job_json, "candidate_json": candidate_json})
             output_text = raw_output["text"] if isinstance(raw_output, dict) else raw_output
             output_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", output_text.strip(), flags=re.DOTALL)
 
@@ -153,11 +154,25 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
                 except Exception:
                     s["weight"] = 0.5
 
-            all_results.append(CandidateAnalysisResponse(**response))
+            return CandidateAnalysisResponse(**response)
+        except Exception as e:
+            # Log error and return None or a dummy error response to avoid crashing the whole batch
+            # For now, we'll just let it bubble up or handle it if needed.
+            # But to be safe in a batch, we might want to return None and filter later.
+            print(f"Error processing candidate {candidate.candidateId}: {e}")
+            return None
 
+    tasks = []
+    for job in request.jobs or []:
+        for candidate in request.candidates or []:
+            tasks.append(process_candidate(job, candidate))
+
+    results = await asyncio.gather(*tasks)
+    
+    # Filter out None results and apply score threshold
     filtered_results = [
-        candidate for candidate in all_results
-        if (candidate.matchScore or 0) >= (request.threshold or 0)
+        res for res in results
+        if res is not None and (res.matchScore or 0) >= (request.threshold or 0)
     ]
 
     return filtered_results
