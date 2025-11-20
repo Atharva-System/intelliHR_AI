@@ -287,7 +287,7 @@ def parse_resumes(payload: MultipleFiles):
 
 
 @router.post("/ai/batch-analyze-resumes", response_model=List[CandidateAnalysisResponse])
-async def batch_analyze_resumes_api(request: JobCandidateData):
+def batch_analyze_resumes_api(request: JobCandidateData):
     try:
         num_candidates = len(request.candidates) if request.candidates else 0
         num_jobs = len(request.jobs) if request.jobs else 0
@@ -362,7 +362,7 @@ async def batch_analyze_resumes_api(request: JobCandidateData):
                     threshold=request.threshold,
                     cosine_score=MINIMUM_ELIGIBLE_SCORE
                 )
-                job_results = await generate_batch_analysis(job_specific_request)
+                job_results = generate_batch_analysis(job_specific_request)
                 all_results.extend(job_results)
             else:
                 logger.warning(f"Job {job.job_id} has NO eligible candidates after filtering")
