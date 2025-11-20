@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # Model configuration
     model: str = Field(default="gemini-2.0-flash", env="MODEL")
     max_output_tokens: int = Field(default=10000, env="MAX_OUTPUT_TOKENS")
-    temperature: float = Field(default=0.2, env="TEMPERATURE")
+    temperature: float = Field(default=0.3, env="TEMPERATURE")
 
     # File handling
     save_dir: str = Field(default="downloaded_files", env="SAVE_DIR")
