@@ -1,5 +1,5 @@
 from typing import List
-from llm import cosine_similarity
+from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
 def check_domain_relevance(
