@@ -297,8 +297,8 @@ def batch_analyze_resumes_api(request: JobCandidateData):
         all_results = []
         
         # Thresholds
-        DOMAIN_RELEVANCE_THRESHOLD = 75  # Minimum score to be considered "in domain" (increased from 60 to filter out false positives)
-        MINIMUM_ELIGIBLE_SCORE = 60      # Minimum score for final eligibility
+        DOMAIN_RELEVANCE_THRESHOLD = 60 
+        MINIMUM_ELIGIBLE_SCORE = 60      
         
         for job in request.jobs or []:
             job_eligible_candidates = []

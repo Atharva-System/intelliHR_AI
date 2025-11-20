@@ -13,7 +13,7 @@ def return_jd(title, experienceRange, job_description, key_responsibility,
               technical_skill, soft_skill, education, nice_to_have):
     
     template = """
-    You are a professional job tag generator expert specializing in creating precise, role-specific tags for job postings.
+    You are a professional job role identifier expert.
 
     You are given the basic job information:
 
@@ -26,60 +26,22 @@ def return_jd(title, experienceRange, job_description, key_responsibility,
     Education: {education}
     Nice to Have: {nice_to_have}
 
-    ### Tag Generation Rules:
+    ### CRITICAL INSTRUCTION:
+    Generate EXACTLY 3 tags that identify the JOB ROLE ONLY.
 
-    **Read and analyze all job information carefully** — understand the role, domain, and requirements before generating tags.
-
-    **Generate tags in these categories:**
-
-    1. **Primary Role / Job Title Tags (MOST IMPORTANT):**
-       - Extract the core job role from the title and responsibilities
-       - Examples: "QA Engineer", "Senior QA Engineer", "Frontend Developer", "Full Stack Developer", "Backend Developer", "Data Analyst", "DevOps Engineer", "Cloud Engineer", "AI/ML Engineer"
-       - If title is "Senior .NET Engineer" → include "Senior .NET Engineer", ".NET Developer", "Backend Developer"
-       - If title is "QA Automation Engineer" → include "QA Engineer", "Automation Tester", "Quality Assurance"
-
-    2. **Core Technical Skill Tags:**
-       - List ALL technical skills mentioned
-       - Include both specific technologies AND general categories
-       - Examples: "Python", "Django", "React.js", "Selenium", "AWS", "Docker", "SQL", "REST API"
-       - For testing roles: "Selenium", "Test Automation", "API Testing", "Performance Testing"
-       - For dev roles: specific languages, frameworks, databases
-
-    3. **Domain / Specialization Tags:**
-       - Identify the domain from responsibilities and description
-       - Examples: "Software Testing", "Web Development", "Cloud Computing", "Machine Learning", "Mobile Development"
-       - For QA: "Quality Assurance", "Testing", "Test Automation"
-       - For Dev: "Software Development", "Web Development", "Backend Development"
-
-    4. **Experience Level Tags:**
-       - Based on experienceRange
-       - Examples: "Senior", "Mid-Level", "Junior", "Lead", "Principal"
-       - Include numeric format: "5+ Years", "3-5 Years", "8+ Years"
-
-    5. **Methodology / Process Tags (if mentioned):**
-       - Examples: "Agile", "Scrum", "CI/CD", "DevOps", "TDD", "BDD"
-
-    **Inference Guidelines:**
-    - Selenium + JIRA + Test Cases → "QA Engineer", "Automation Tester", "Software Testing"
-    - React + JavaScript + HTML/CSS → "Frontend Developer", "Web Development"
-    - Python + Django/Flask/FastAPI → "Backend Developer", "Python Developer"
-    - AWS + Docker + Kubernetes → "DevOps Engineer", "Cloud Engineer"
-    - .NET + C# + SQL Server → ".NET Developer", "Backend Developer"
-
-    **CRITICAL RULES:**
-    - Tags must be ROLE-SPECIFIC and DOMAIN-FOCUSED
-    - Avoid generic tags like "Communication", "Teamwork" (these are soft skills, not tags)
-    - Focus on technical skills and job role identity
-    - Include both specific (e.g., "Selenium") and general (e.g., "Test Automation") tags
-    - Ensure tags clearly identify the JOB DOMAIN (QA vs Dev vs Data vs DevOps)
+    **Tag Rules:**
+    1. Focus ONLY on job role/position identity
+    2. DO NOT include technical skills, tools, or technologies
+    3. DO NOT include soft skills or methodologies
+    4. Tags must clearly identify the PROFESSIONAL ROLE
+    5. Analyze the title, responsibilities, and technical skills to infer the correct role
+    6. Generate 3 variations of the same role (e.g., specific title, general role, alternative title)
 
     **Output Format:**
-    Return only valid JSON in this exact format:
+    Return EXACTLY 3 role-specific tags in valid JSON:
     {{
-    "tags": ["tag1", "tag2", "tag3", ...]
+    "tags": ["Role Tag 1", "Role Tag 2", "Role Tag 3"]
     }}
-
-    Generate 8-15 tags that accurately represent this job role and requirements.
     """
 
     
