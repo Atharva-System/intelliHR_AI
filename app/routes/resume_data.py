@@ -18,7 +18,7 @@ from agents.ai_question_generate import generate_interview_questions
 from sklearn.metrics.pairwise import cosine_similarity
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 import numpy as np
-
+from config.Settings import minimum_eligible_score
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -295,16 +295,14 @@ def batch_analyze_resumes_api(request: JobCandidateData):
         
         embeddings = FastEmbedEmbeddings()
         all_results = []
-        
-        # Thresholds
-        DOMAIN_RELEVANCE_THRESHOLD = 50 
-        MINIMUM_ELIGIBLE_SCORE = 50      
+
+        MINIMUM_ELIGIBLE_SCORE = minimum_eligible_score      
         
         for job in request.jobs or []:
             job_eligible_candidates = []
             
             for candidate in request.candidates or []:
-                # Auto-include if either has no tags
+        
                 if not candidate.candidate_tag or len(candidate.candidate_tag) == 0:
                     logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId}: "
                                f"No candidate tags, auto-include")
@@ -318,27 +316,19 @@ def batch_analyze_resumes_api(request: JobCandidateData):
                     continue
                 
                 try:
-                    # STEP 1: Check domain relevance first using STRICTER algorithm
-                    # This requires multiple good matches, not just one high similarity
+                    
                     relevance_score = check_domain_relevance_strict(
                         candidate.candidate_tag,
                         job.job_tag,
                         embeddings
                     )
                     
-                    if relevance_score < DOMAIN_RELEVANCE_THRESHOLD:
-                        logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId}: "
-                                   f"Relevance {relevance_score:.1f}% - OUT OF DOMAIN (threshold: {DOMAIN_RELEVANCE_THRESHOLD}%) - FILTERED OUT")
-                        continue  # Skip this candidate entirely
-                    
-                    # STEP 2: Calculate detailed match score for relevant candidates
                     match_score = calculate_weighted_coverage_score(
                         candidate.candidate_tag,
                         job.job_tag,
                         embeddings
                     )
                     
-                    # STEP 3: Determine eligibility
                     if match_score >= MINIMUM_ELIGIBLE_SCORE:
                         job_eligible_candidates.append(candidate)
                         logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId}: "
@@ -352,7 +342,6 @@ def batch_analyze_resumes_api(request: JobCandidateData):
                                   f"candidate {candidate.candidateId}: {str(e)}")
                     job_eligible_candidates.append(candidate)
             
-            # Process eligible candidates
             if job_eligible_candidates:
                 logger.info(f"Job {job.job_id} has {len(job_eligible_candidates)} eligible candidates "
                            f"(filtered from {num_candidates} total)")

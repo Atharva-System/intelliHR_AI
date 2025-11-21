@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     save_dir: str = Field(default="downloaded_files", env="SAVE_DIR")
     max_file_size: int = Field(default=10 * 1024 * 1024, env="MAX_FILE_SIZE")
     max_files_per_request: int = Field(default=10, env="MAX_FILES_PER_REQUEST")
+    minimum_eligible_score: int = Field(default=60, env="MINIMUM_ELIGIBLE_SCORE")
 
     allowed_file_types: str = Field(
         default=(
