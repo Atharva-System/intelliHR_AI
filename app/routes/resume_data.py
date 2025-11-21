@@ -18,7 +18,7 @@ from agents.ai_question_generate import generate_interview_questions
 from sklearn.metrics.pairwise import cosine_similarity
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 import numpy as np
-
+from config.Settings import minimum_eligible_score
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -296,7 +296,7 @@ def batch_analyze_resumes_api(request: JobCandidateData):
         embeddings = FastEmbedEmbeddings()
         all_results = []
 
-        MINIMUM_ELIGIBLE_SCORE = 60      
+        MINIMUM_ELIGIBLE_SCORE = minimum_eligible_score      
         
         for job in request.jobs or []:
             job_eligible_candidates = []
