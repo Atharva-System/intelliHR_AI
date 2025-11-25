@@ -28,7 +28,7 @@ key_resp_prompt = PromptTemplate(
     input_variables=["title", "experienceRange", "department", "subDepartment", "keyResponsibilities"],
     template="""
     You are an expert HR assistant AI. Refine and enhance the list of key responsibilities for the following role to make them clear, professional, and aligned with industry standards. Ensure the responsibilities are tailored to the specified experience range, avoiding repetition of the input and adding value where possible (e.g., specificity, actionable language, or additional relevant duties).
-
+    If title ,experincerange,department,subdepartment as not valid so return response in all field empty.
     Title: {title}
     Experience Range: {experienceRange}
     Department: {department}
@@ -52,7 +52,7 @@ soft_prompt = PromptTemplate(
     - Rephrasing each skill to be professional, impactful, and tailored to the role’s context, department, and experience level.
     - Expanding the list with additional relevant soft skills that align with the department and sub-department, avoiding generic additions.
     - Do NOT repeat the input verbatim; always improve or add value.
-
+    - If title ,experincerange,department,subdepartment as not valid so return response in all field empty.
     Title: {title}
     Experience Range: {experienceRange}
     Department: {department}
@@ -77,7 +77,7 @@ tech_prompt = PromptTemplate(
     - Adding relevant technical skills that complement the role, department, and experience level, if applicable.
     - Ensuring skills reflect the specific needs of the department and sub-department, avoiding generic or redundant entries.
     - Do NOT repeat the input verbatim; always improve or add value.
-
+    - If title ,experincerange,department,subdepartment as not valid so return response in all field empty.
     Title: {title}
     Experience Range: {experienceRange}
     Department: {department}
@@ -101,7 +101,7 @@ edu_prompt = PromptTemplate(
     - Clarifying degree types, fields of study, or alternative qualifications (e.g., equivalent experience) to align with the role, department, and experience level.
     - Ensuring requirements are professional, specific, and relevant to the department and sub-department.
     - Avoiding overly generic or restrictive requirements unless specified in the input.
-
+    - If title ,experincerange,department,subdepartment as not valid so return response in all field empty.
     Title: {title}
     Experience Range: {experienceRange}
     Department: {department}
@@ -125,7 +125,7 @@ cert_prompt = PromptTemplate(
     - Rephrasing certifications to be clear, professional, and relevant to the role, department, and experience level.
     - Adding relevant certifications that align with the department and sub-department, if applicable, ensuring they are current and industry-recognized.
     - Avoiding repetition of the input and ensuring certifications reflect the role’s requirements.
-
+    - If title ,experincerange,department,subdepartment as not valid so return response in all field empty.
     Title: {title}
     Experience Range: {experienceRange}
     Department: {department}
@@ -149,7 +149,7 @@ nice_prompt = PromptTemplate(
     - Rephrasing skills to be clear, professional, and aligned with the role, department, and experience level.
     - Adding relevant nice-to-have skills that complement the role and department, ensuring they are desirable but not essential and distinct from required skills.
     - Avoiding repetition of the input or overlap with required technical or soft skills.
-
+    - If title ,experincerange,department,subdepartment as not valid so return response in all field empty.
     Title: {title}
     Experience Range: {experienceRange}
     Department: {department}
