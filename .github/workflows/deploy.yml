@@ -19,11 +19,15 @@ env:
   CONTAINER_NAME: ai
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
+
+    outputs:
+      image-uri: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+      ecr-registry: ${{ steps.login-ecr.outputs.registry }}
 
     steps:
       - name: Checkout code
@@ -64,7 +68,24 @@ jobs:
           cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:buildcache,mode=max
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        continue-on-error: false
+
+      - name: Output image URI
+        run: |
+          echo "✅ Image built and pushed: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Get latest task definition
         id: get-task-def
@@ -81,7 +102,7 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          image: ${{ needs.build.outputs.ecr-registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
@@ -94,5 +115,5 @@ jobs:
       - name: Deployment complete
         run: |
           echo "✅ AI Service deployed successfully!"
-          echo "Image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
+          echo "Image: ${{ needs.build.outputs.ecr-registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
 
