@@ -24,14 +24,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create .env.stage file from GitHub secrets
+      - name: Create .env file from GitHub secrets
         run: |
           if [ "${{ github.ref_name }}" == "stage" ]; then
-            echo "${{ secrets.STAGE_ENV_FILE_CONTENT }}" > .env.stage
+            echo "${{ secrets.STAGE_ENV_FILE_CONTENT }}" > .env
           else
-            echo "${{ secrets.ENV_FILE_CONTENT }}" > .env.stage
+            echo "${{ secrets.ENV_FILE_CONTENT }}" > .env
           fi
-          echo "✅ Created .env.stage file from GitHub secrets"
+          echo "✅ Created .env file from GitHub secrets"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -52,8 +52,6 @@ jobs:
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
             ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
-          build-args: |
-            ENVIRONMENT=stage
           cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:buildcache
           cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:buildcache,mode=max
         env:

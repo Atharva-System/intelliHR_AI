@@ -7,10 +7,6 @@ RUN apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Accept ENVIRONMENT build argument (default: dev)
-ARG ENVIRONMENT=dev
-ENV ENVIRONMENT=${ENVIRONMENT}
-
 # Copy requirements first for better caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -18,8 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the entire application
 COPY . .
 
-# Copy the correct .env file based on environment
-COPY .env.${ENVIRONMENT} .env
+# Copy .env file (created from GitHub secrets in workflow)
+COPY .env .env
 
 # Create directory for downloaded files
 RUN mkdir -p downloaded_files
