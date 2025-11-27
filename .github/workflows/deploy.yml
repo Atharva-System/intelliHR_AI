@@ -62,62 +62,30 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         continue-on-error: false
 
-      - name: Get current task definition
-        id: task-def
+      - name: Get latest task definition
+        id: get-task-def
         run: |
-          TASK_DEFINITION=$(aws ecs describe-task-definition \
+          aws ecs describe-task-definition \
             --task-definition ${{ env.ECS_SERVICE }} \
             --query 'taskDefinition' \
-            --output json)
-          echo "$TASK_DEFINITION" > task-definition.json
-          echo "Task definition retrieved"
+            --output json > task-definition.json
+          echo "✅ Retrieved latest task definition"
 
-      - name: Update task definition with new image
-        id: update-task-def
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          # Update the image in task definition
-          FULL_IMAGE_URI="$ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
-          
-          # Use jq to update the image in the task definition
-          jq --arg IMAGE "$FULL_IMAGE_URI" \
-            '.containerDefinitions[0].image = $IMAGE' \
-            task-definition.json > task-definition-updated.json
-          
-          # Remove fields that can't be set during registration
-          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
-            task-definition-updated.json > task-definition-final.json
-          
-          # Register new task definition
-          aws ecs register-task-definition \
-            --cli-input-json file://task-definition-final.json \
-            --query 'taskDefinition.taskDefinitionArn' \
-            --output text > task-def-arn.txt
-          
-          TASK_DEF_ARN=$(cat task-def-arn.txt)
-          echo "task-definition-arn=$TASK_DEF_ARN" >> $GITHUB_OUTPUT
-          echo "New task definition registered: $TASK_DEF_ARN"
+      - name: Render Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
-      - name: Deploy to Amazon ECS
-        run: |
-          TASK_DEF_ARN=$(cat task-def-arn.txt)
-          aws ecs update-service \
-            --cluster ${{ env.ECS_CLUSTER }} \
-            --service ${{ env.ECS_SERVICE }} \
-            --task-definition $TASK_DEF_ARN \
-            --force-new-deployment \
-            --query 'service.serviceName' \
-            --output text
-          echo "✅ Service update initiated"
-
-      - name: Wait for service to stabilize
-        run: |
-          echo "Waiting for service to stabilize..."
-          aws ecs wait services-stable \
-            --cluster ${{ env.ECS_CLUSTER }} \
-            --services ${{ env.ECS_SERVICE }}
-          echo "✅ Service is stable"
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
 
       - name: Deployment complete
         run: |
