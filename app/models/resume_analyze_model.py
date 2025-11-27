@@ -200,3 +200,5 @@ class AIPromptQuestionRequest(BaseModel):
 
 class AIPromptQuestionResponse(BaseModel):
     questions_to_ask: Optional[List[str]]=None
+    is_valid_prompt: Optional[bool] = True
+    message: Optional[str] = None

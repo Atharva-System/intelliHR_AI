@@ -42,8 +42,12 @@ def is_blocked_content(prompt: str) -> bool:
 
 
 def is_gibberish(prompt: str) -> bool:
+    if len(prompt) < 5:
+        if any(c.isalpha() for c in prompt):
+            return False
+            
     alpha_count = sum(1 for c in prompt if c.isalpha())
-    if len(prompt) > 0 and alpha_count / len(prompt) < 0.5:
+    if len(prompt) > 0 and alpha_count / len(prompt) < 0.3:
         return True
     
     if re.match(r'^(.)\1+$', prompt.strip()):
@@ -137,14 +141,23 @@ OUTPUT FORMAT (JSON only, no other text):
         
         response = model.generate_content(prompt)
         
-        if not response or not response.text:
+        try:
+            text = response.text
+        except ValueError:
+            return AIPromptQuestionResponse(
+                questions_to_ask=[],
+                is_valid_prompt=False,
+                message="The prompt triggered safety filters. Please try a different topic."
+            )
+
+        if not response or not text:
             return AIPromptQuestionResponse(
                 questions_to_ask=[],
                 is_valid_prompt=False,
                 message="Failed to generate questions. Please try again."
             )
         
-        output_text = clean_llm_output(response.text)
+        output_text = clean_llm_output(text)
         
         if not output_text:
             return AIPromptQuestionResponse(
