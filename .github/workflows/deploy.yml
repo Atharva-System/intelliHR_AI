@@ -1,0 +1,111 @@
+name: Deploy AI Service
+
+on:
+  push:
+    branches:
+      - pp/main
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: intellihr-staging-ai
+  ECS_CLUSTER: intelliHR-staging-cluster
+  ECS_SERVICE: intelliHR-staging-ai
+  CONTAINER_NAME: ai
+  ENVIRONMENT: stage
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build --build-arg ENVIRONMENT=${{ env.ENVIRONMENT }} -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Get current task definition
+        id: task-def
+        run: |
+          TASK_DEFINITION=$(aws ecs describe-task-definition \
+            --task-definition ${{ env.ECS_SERVICE }} \
+            --query 'taskDefinition' \
+            --output json)
+          echo "$TASK_DEFINITION" > task-definition.json
+          echo "Task definition retrieved"
+
+      - name: Update task definition with new image
+        id: update-task-def
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          # Update the image in task definition
+          FULL_IMAGE_URI="$ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
+          
+          # Use jq to update the image in the task definition
+          jq --arg IMAGE "$FULL_IMAGE_URI" \
+            '.containerDefinitions[0].image = $IMAGE' \
+            task-definition.json > task-definition-updated.json
+          
+          # Remove fields that can't be set during registration
+          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
+            task-definition-updated.json > task-definition-final.json
+          
+          # Register new task definition
+          aws ecs register-task-definition \
+            --cli-input-json file://task-definition-final.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text > task-def-arn.txt
+          
+          TASK_DEF_ARN=$(cat task-def-arn.txt)
+          echo "task-definition-arn=$TASK_DEF_ARN" >> $GITHUB_OUTPUT
+          echo "New task definition registered: $TASK_DEF_ARN"
+
+      - name: Deploy to Amazon ECS
+        run: |
+          TASK_DEF_ARN=$(cat task-def-arn.txt)
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE }} \
+            --task-definition $TASK_DEF_ARN \
+            --force-new-deployment \
+            --query 'service.serviceName' \
+            --output text
+          echo "✅ Service update initiated"
+
+      - name: Wait for service to stabilize
+        run: |
+          echo "Waiting for service to stabilize..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }}
+          echo "✅ Service is stable"
+
+      - name: Deployment complete
+        run: |
+          echo "✅ AI Service deployed successfully!"
+          echo "Image: ${{ env.IMAGE_URI }}"
+
