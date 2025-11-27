@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - pp/main
+      - stage
 
 env:
   AWS_REGION: us-east-1
@@ -11,7 +12,6 @@ env:
   ECS_CLUSTER: intelliHR-staging-cluster
   ECS_SERVICE: intelliHR-staging-ai
   CONTAINER_NAME: ai
-  ENVIRONMENT: stage
 
 jobs:
   deploy:
@@ -23,6 +23,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set environment variables based on branch
+        id: set-env
+        run: |
+          if [ "${{ github.ref_name }}" == "stage" ]; then
+            echo "ENVIRONMENT=stage" >> $GITHUB_ENV
+            echo "Using STAGE secrets"
+          else
+            echo "ENVIRONMENT=stage" >> $GITHUB_ENV
+            echo "Using default secrets"
+          fi
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -45,12 +56,24 @@ jobs:
             ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
           build-args: |
             ENVIRONMENT=${{ env.ENVIRONMENT }}
-            API_KEY_1=${{ secrets.API_KEY_1 }}
-            API_KEY_2=${{ secrets.API_KEY_2 }}
-            API_KEY_3=${{ secrets.API_KEY_3 }}
-            MODEL=${{ secrets.MODEL }}
-            LANGSMITH_API_KEY=${{ secrets.LANGSMITH_API_KEY }}
-            LANGSMITH_PROJECT=${{ secrets.LANGSMITH_PROJECT }}
+            API_KEY_1=${{ github.ref_name == 'stage' && secrets.STAGE_API_KEY_1 || secrets.API_KEY_1 }}
+            API_KEY_2=${{ github.ref_name == 'stage' && secrets.STAGE_API_KEY_2 || secrets.API_KEY_2 }}
+            API_KEY_3=${{ github.ref_name == 'stage' && secrets.STAGE_API_KEY_3 || secrets.API_KEY_3 }}
+            MODEL=${{ github.ref_name == 'stage' && secrets.STAGE_MODEL || secrets.MODEL }}
+            MAX_OUTPUT_TOKENS=${{ github.ref_name == 'stage' && secrets.STAGE_MAX_OUTPUT_TOKENS || secrets.MAX_OUTPUT_TOKENS }}
+            TEMPERATURE=${{ github.ref_name == 'stage' && secrets.STAGE_TEMPERATURE || secrets.TEMPERATURE }}
+            SAVE_DIR=${{ github.ref_name == 'stage' && secrets.STAGE_SAVE_DIR || secrets.SAVE_DIR }}
+            MAX_FILE_SIZE=${{ github.ref_name == 'stage' && secrets.STAGE_MAX_FILE_SIZE || secrets.MAX_FILE_SIZE }}
+            MAX_FILES_PER_REQUEST=${{ github.ref_name == 'stage' && secrets.STAGE_MAX_FILES_PER_REQUEST || secrets.MAX_FILES_PER_REQUEST }}
+            MINIMUM_ELIGIBLE_SCORE=${{ github.ref_name == 'stage' && secrets.STAGE_MINIMUM_ELIGIBLE_SCORE || secrets.MINIMUM_ELIGIBLE_SCORE }}
+            ALLOWED_FILE_TYPES=${{ github.ref_name == 'stage' && secrets.STAGE_ALLOWED_FILE_TYPES || secrets.ALLOWED_FILE_TYPES }}
+            LOG_LEVEL=${{ github.ref_name == 'stage' && secrets.STAGE_LOG_LEVEL || secrets.LOG_LEVEL }}
+            LOG_FILE=${{ github.ref_name == 'stage' && secrets.STAGE_LOG_FILE || secrets.LOG_FILE }}
+            API_HOST=${{ github.ref_name == 'stage' && secrets.STAGE_API_HOST || secrets.API_HOST }}
+            API_PORT=${{ github.ref_name == 'stage' && secrets.STAGE_API_PORT || secrets.API_PORT }}
+            DEBUG_MODE=${{ github.ref_name == 'stage' && secrets.STAGE_DEBUG_MODE || secrets.DEBUG_MODE }}
+            LANGSMITH_API_KEY=${{ github.ref_name == 'stage' && secrets.STAGE_LANGSMITH_API_KEY || secrets.LANGSMITH_API_KEY }}
+            LANGSMITH_PROJECT=${{ github.ref_name == 'stage' && secrets.STAGE_LANGSMITH_PROJECT || secrets.LANGSMITH_PROJECT }}
           cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:buildcache
           cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:buildcache,mode=max
         env:
