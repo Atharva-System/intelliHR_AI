@@ -5,11 +5,12 @@ import os
 from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, validator
+from agents.ai_prompt_question import generate_prompt_based_questions
 from agents.resume_extractor import resume_extract_info
 import logging
 import uuid
 from pathlib import Path
-from app.models.resume_analyze_model import AIQuestionRequest, AIQuestionResponse
+from app.models.resume_analyze_model import AIPromptQuestionRequest, AIPromptQuestionResponse, AIQuestionRequest, AIQuestionResponse
 from app.services.ai_match_score import calculate_weighted_coverage_score, check_domain_relevance, check_domain_relevance_strict
 from config.Settings import settings
 from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
@@ -372,3 +373,15 @@ def ai_question_generator(request: AIQuestionRequest):
     except Exception as e:
         logger.error(f"Error generating AI job question: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to generate AI job question")
+    
+
+@router.post("/generate-prompt-questions", response_model=AIPromptQuestionResponse)
+def ai_prompt_question_generator(request: AIPromptQuestionRequest):
+    try:
+        return generate_prompt_based_questions(request)
+    except Exception as e:
+        logger.error(f"Error generating prompt-based questions: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to generate questions: {str(e)}"
+        )
