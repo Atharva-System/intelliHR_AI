@@ -2,15 +2,15 @@ from fastapi import APIRouter, HTTPException
 from typing import List
 import logging
 
-from app.models.feedback_model import FeedbackItem, FeedbackResponse
-from agents.ai_feedback import evaluate_feedback
+from app.models.feedback_model import EnhanceFeedbackRequest, EnhanceFeedbackResponse
+from agents.ai_feedback import enhance_feedback
 
 router = APIRouter()
 
-@router.post("/evaluate-feedback", response_model=FeedbackResponse)
-def analyze_feedback(feedback: list[FeedbackItem]):
+@router.post("/evaluate-feedback", response_model=EnhanceFeedbackResponse)
+def analyze_feedback(feedback:EnhanceFeedbackRequest):
     try:
-        response = evaluate_feedback(feedback)
+        response = enhance_feedback(feedback)
         return response
     except Exception as e:
         logging.error(f"Error evaluating feedback: {str(e)}")
