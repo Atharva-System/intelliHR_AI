@@ -24,11 +24,11 @@ COPY .env.${ENVIRONMENT} .env
 # Create directory for downloaded files
 RUN mkdir -p downloaded_files
 
-# Expose the port your FastAPI app uses (default is 2001)
-EXPOSE 2001
+# Expose the port your FastAPI app uses
+EXPOSE 80
 
 # Set environment variables
 ENV PYTHONPATH=/app
 
 # Run the FastAPI application using uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "2001"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
