@@ -194,3 +194,9 @@ class AIQuestionResponse(BaseModel):
     ai_score: Optional[int]= None
     summary: Summary
     advice: Advice
+
+class AIPromptQuestionRequest(BaseModel):
+    prompt:Optional[str]=None
+
+class AIPromptQuestionResponse(BaseModel):
+    questions_to_ask: Optional[List[str]]=None
