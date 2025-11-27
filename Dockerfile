@@ -11,9 +11,6 @@ RUN apt-get update && apt-get install -y \
 ARG ENVIRONMENT=dev
 ENV ENVIRONMENT=${ENVIRONMENT}
 
-# Accept .env file content as a single build argument
-ARG ENV_FILE_CONTENT
-
 # Copy requirements first for better caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -21,10 +18,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the entire application
 COPY . .
 
-# Create .env file from build arg (entire .env file content passed as one arg)
-RUN if [ -n "$ENV_FILE_CONTENT" ]; then \
-      echo "$ENV_FILE_CONTENT" > .env; \
-    fi
+# Copy the correct .env file based on environment
+COPY .env.${ENVIRONMENT} .env
 
 # Create directory for downloaded files
 RUN mkdir -p downloaded_files
