@@ -2,8 +2,7 @@ name: Deploy AI Service
 
 on:
   push:
-    branches:
-      - pp/main
+    branches:      
       - stage
   workflow_dispatch:
 
