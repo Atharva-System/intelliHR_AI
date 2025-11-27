@@ -3,12 +3,10 @@ version: 0.2
 env:
   variables:
     AWS_REGION: us-east-1
-    ECR_REPOSITORY: intellihr-staging-ai
-    ECS_CLUSTER: intelliHR-staging-cluster
-    ECS_SERVICE: intelliHR-staging-ai
+    ECR_REPOSITORY: talent-pulse-staging-ai
+    ECS_CLUSTER: talent-pulse-staging-cluster
+    ECS_SERVICE: talent-pulse-staging-ai
     CONTAINER_NAME: ai
-  parameter-store:
-    # No secrets needed - we'll read from Parameter Store in the build
 
 phases:
   pre_build:
@@ -55,36 +53,14 @@ phases:
           --output json > task-definition.json
       - echo "✅ Retrieved latest task definition"
       
-      - echo "Getting environment variables from Parameter Store..."
-      - aws ssm get-parameters-by-path \
-          --path "/intelliHR-staging/ai/" \
-          --recursive \
-          --with-decryption \
-          --query 'Parameters[*].[Name,Value]' \
-          --output json > params.json
-      
-      - echo "Converting to ECS environment variables format..."
-      - jq '[.[] | {
-          name: (.[0] | split("/") | .[-1]),
-          value: .[1]
-        }]' params.json > env-vars.json
-      
-      - ENV_COUNT=$(jq 'length' env-vars.json)
-      - echo "✅ Retrieved $ENV_COUNT environment variables from Parameter Store"
-      
-      - echo "Updating task definition with environment variables..."
-      - jq --slurpfile env_vars env-vars.json \
-          '.containerDefinitions[0].environment = $env_vars[0]' \
-          task-definition.json > task-definition-updated.json
-      
       - echo "Updating task definition with new image..."
       - jq --arg IMAGE "$REPOSITORY_URI:$IMAGE_TAG" \
           '.containerDefinitions[0].image = $IMAGE' \
-          task-definition-updated.json > task-definition-final.json
+          task-definition.json > task-definition-updated.json
       
       - echo "Removing fields that can't be set during registration..."
       - jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
-          task-definition-final.json > task-definition-clean.json
+          task-definition-updated.json > task-definition-clean.json
       
       - echo "Registering new task definition..."
       - TASK_DEF_ARN=$(aws ecs register-task-definition \
