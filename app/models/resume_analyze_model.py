@@ -195,10 +195,11 @@ class AIQuestionResponse(BaseModel):
     summary: Summary
     advice: Advice
 
+from pydantic import BaseModel
+from typing import Optional, List
+
 class AIPromptQuestionRequest(BaseModel):
-    prompt:Optional[str]=None
+    prompt: Optional[str] = None
 
 class AIPromptQuestionResponse(BaseModel):
-    questions_to_ask: Optional[List[str]]=None
-    is_valid_prompt: Optional[bool] = True
-    message: Optional[str] = None
+    questions_to_ask: Optional[List[str]] = None
