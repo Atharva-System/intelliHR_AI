@@ -7,6 +7,10 @@ on:
       - stage
   workflow_dispatch:
 
+concurrency:
+  group: deploy-ai-${{ github.ref_name }}
+  cancel-in-progress: true
+
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: intellihr-staging-ai
