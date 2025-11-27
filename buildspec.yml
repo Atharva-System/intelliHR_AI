@@ -1,0 +1,114 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_REGION: us-east-1
+    ECR_REPOSITORY: intellihr-staging-ai
+    ECS_CLUSTER: intelliHR-staging-cluster
+    ECS_SERVICE: intelliHR-staging-ai
+    CONTAINER_NAME: ai
+  parameter-store:
+    # No secrets needed - we'll read from Parameter Store in the build
+
+phases:
+  pre_build:
+    commands:
+      - echo "Starting AI service deployment..."
+      - echo "Installing required tools..."
+      - yum install -y jq || true
+      - |
+        if [ -z "$AWS_ACCOUNT_ID" ]; then
+          AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+        fi
+      - echo "AWS Account ID: $AWS_ACCOUNT_ID"
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+      - REPOSITORY_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}
+      - |
+        if [ -n "$CODEBUILD_RESOLVED_SOURCE_VERSION" ]; then
+          COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+        else
+          COMMIT_HASH=$(date +%s)
+        fi
+      - IMAGE_TAG=${COMMIT_HASH}
+      - echo "Repository URI: $REPOSITORY_URI"
+      - echo "Image tag: $IMAGE_TAG"
+
+  build:
+    commands:
+      - echo "Building Docker image..."
+      - docker build -t $REPOSITORY_URI:$IMAGE_TAG .
+      - docker tag $REPOSITORY_URI:$IMAGE_TAG $REPOSITORY_URI:latest
+      - echo "✅ Docker image built successfully"
+
+  post_build:
+    commands:
+      - echo "Pushing Docker image to ECR..."
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - docker push $REPOSITORY_URI:latest
+      - echo "✅ Image pushed to ECR"
+      
+      - echo "Getting latest task definition..."
+      - aws ecs describe-task-definition \
+          --task-definition $ECS_SERVICE \
+          --query 'taskDefinition' \
+          --output json > task-definition.json
+      - echo "✅ Retrieved latest task definition"
+      
+      - echo "Getting environment variables from Parameter Store..."
+      - aws ssm get-parameters-by-path \
+          --path "/intelliHR-staging/ai/" \
+          --recursive \
+          --with-decryption \
+          --query 'Parameters[*].[Name,Value]' \
+          --output json > params.json
+      
+      - echo "Converting to ECS environment variables format..."
+      - jq '[.[] | {
+          name: (.[0] | split("/") | .[-1]),
+          value: .[1]
+        }]' params.json > env-vars.json
+      
+      - ENV_COUNT=$(jq 'length' env-vars.json)
+      - echo "✅ Retrieved $ENV_COUNT environment variables from Parameter Store"
+      
+      - echo "Updating task definition with environment variables..."
+      - jq --slurpfile env_vars env-vars.json \
+          '.containerDefinitions[0].environment = $env_vars[0]' \
+          task-definition.json > task-definition-updated.json
+      
+      - echo "Updating task definition with new image..."
+      - jq --arg IMAGE "$REPOSITORY_URI:$IMAGE_TAG" \
+          '.containerDefinitions[0].image = $IMAGE' \
+          task-definition-updated.json > task-definition-final.json
+      
+      - echo "Removing fields that can't be set during registration..."
+      - jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
+          task-definition-final.json > task-definition-clean.json
+      
+      - echo "Registering new task definition..."
+      - TASK_DEF_ARN=$(aws ecs register-task-definition \
+          --cli-input-json file://task-definition-clean.json \
+          --query 'taskDefinition.taskDefinitionArn' \
+          --output text)
+      - echo "✅ New task definition registered: $TASK_DEF_ARN"
+      
+      - echo "Deploying to ECS..."
+      - aws ecs update-service \
+          --cluster $ECS_CLUSTER \
+          --service $ECS_SERVICE \
+          --task-definition $TASK_DEF_ARN \
+          --force-new-deployment \
+          --query 'service.serviceName' \
+          --output text
+      - echo "✅ Service update initiated"
+      
+      - echo "Waiting for service to stabilize..."
+      - aws ecs wait services-stable \
+          --cluster $ECS_CLUSTER \
+          --services $ECS_SERVICE
+      - echo "✅ Service is stable"
+      
+      - echo "✅ AI Service deployed successfully!"
+      - echo "Image: $REPOSITORY_URI:$IMAGE_TAG"
+
