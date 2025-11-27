@@ -3,8 +3,9 @@ name: Deploy AI Service
 on:
   push:
     branches:
-      - pp/main
+      - main
       - stage
+      - pp/stage
   workflow_dispatch:
 
 concurrency:
@@ -13,9 +14,9 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: intellihr-staging-ai
-  ECS_CLUSTER: intelliHR-staging-cluster
-  ECS_SERVICE: intelliHR-staging-ai
+  ECR_REPOSITORY: talent-pulse-staging-ai
+  ECS_CLUSTER: talent-pulse-staging-cluster
+  ECS_SERVICE: talent-pulse-staging-ai
   CONTAINER_NAME: ai
 
 jobs:
@@ -86,37 +87,6 @@ jobs:
             --query 'taskDefinition' \
             --output json > task-definition.json
           echo "✅ Retrieved latest task definition"
-
-      - name: Get environment variables from Parameter Store
-        id: get-env-vars
-        run: |
-          # Get all parameters from Parameter Store
-          aws ssm get-parameters-by-path \
-            --path "/intelliHR-staging/ai/" \
-            --recursive \
-            --with-decryption \
-            --query 'Parameters[*].[Name,Value]' \
-            --output json > params.json
-          
-          # Convert to ECS environment variables format
-          # Extract parameter name (last part after /) and value
-          jq '[.[] | {
-            name: (.[0] | split("/") | .[-1]),
-            value: .[1]
-          }]' params.json > env-vars.json
-          
-          ENV_COUNT=$(jq 'length' env-vars.json)
-          echo "✅ Retrieved $ENV_COUNT environment variables from Parameter Store"
-
-      - name: Update task definition with environment variables
-        run: |
-          # Add environment variables to task definition
-          jq --slurpfile env_vars env-vars.json \
-            '.containerDefinitions[0].environment = $env_vars[0]' \
-            task-definition.json > task-definition-with-env.json
-          
-          mv task-definition-with-env.json task-definition.json
-          echo "✅ Added environment variables to task definition"
 
       - name: Render Amazon ECS task definition
         id: task-def
