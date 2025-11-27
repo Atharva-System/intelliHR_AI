@@ -33,15 +33,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create .env file from GitHub secrets
-        run: |
-          if [ "${{ github.ref_name }}" == "stage" ]; then
-            echo "${{ secrets.STAGE_ENV_FILE_CONTENT }}" > .env
-          else
-            echo "${{ secrets.ENV_FILE_CONTENT }}" > .env
-          fi
-          echo "✅ Created .env file from GitHub secrets"
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -95,6 +86,37 @@ jobs:
             --query 'taskDefinition' \
             --output json > task-definition.json
           echo "✅ Retrieved latest task definition"
+
+      - name: Get environment variables from Parameter Store
+        id: get-env-vars
+        run: |
+          # Get all parameters from Parameter Store
+          aws ssm get-parameters-by-path \
+            --path "/intelliHR-staging/ai/" \
+            --recursive \
+            --with-decryption \
+            --query 'Parameters[*].[Name,Value]' \
+            --output json > params.json
+          
+          # Convert to ECS environment variables format
+          # Extract parameter name (last part after /) and value
+          jq '[.[] | {
+            name: (.[0] | split("/") | .[-1]),
+            value: .[1]
+          }]' params.json > env-vars.json
+          
+          ENV_COUNT=$(jq 'length' env-vars.json)
+          echo "✅ Retrieved $ENV_COUNT environment variables from Parameter Store"
+
+      - name: Update task definition with environment variables
+        run: |
+          # Add environment variables to task definition
+          jq --slurpfile env_vars env-vars.json \
+            '.containerDefinitions[0].environment = $env_vars[0]' \
+            task-definition.json > task-definition-with-env.json
+          
+          mv task-definition-with-env.json task-definition.json
+          echo "✅ Added environment variables to task definition"
 
       - name: Render Amazon ECS task definition
         id: task-def

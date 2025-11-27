@@ -14,9 +14,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the entire application
 COPY . .
 
-# Copy .env file (created from GitHub secrets in workflow)
-COPY .env .env
-
 # Create directory for downloaded files
 RUN mkdir -p downloaded_files
 
