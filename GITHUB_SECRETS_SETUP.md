@@ -52,8 +52,8 @@ LANGSMITH_PROJECT=intellihr-ai-staging
 
 ### How It Works
 
-1. The workflow passes the entire `.env` file content as a single Docker build argument (`ENV_FILE_CONTENT`)
-2. The Dockerfile writes this content directly to `.env` file during build
+1. The workflow creates a `.env.stage` file from the GitHub secret (`ENV_FILE_CONTENT` or `STAGE_ENV_FILE_CONTENT`)
+2. The Dockerfile automatically copies `.env.stage` to `.env` during build (when `ENVIRONMENT=stage`)
 3. No need to manage individual environment variables - just paste your entire `.env` file content into the secret!
 
 ### Workflow Features
@@ -66,12 +66,16 @@ LANGSMITH_PROJECT=intellihr-ai-staging
 
 ### Docker Build Process
 
+The workflow:
+- ✅ Creates `.env.stage` file from GitHub secrets before building
+- ✅ Uses branch-based secrets (different content for different branches)
+
 The Dockerfile:
-- ✅ Accepts a single build argument: `ENV_FILE_CONTENT`
-- ✅ Writes the content directly to `.env` file
-- ✅ No fallback to copying `.env` files from repository
+- ✅ Accepts `ENVIRONMENT` build argument (set to `stage`)
+- ✅ Automatically copies `.env.${ENVIRONMENT}` to `.env` (i.e., `.env.stage` → `.env`)
 
 This ensures:
 - Secrets are baked into the Docker image at build time
 - No `.env` files are committed to the repository
 - Simple management - just one secret with all environment variables
+- The `.env.stage` file is created dynamically from secrets, then copied by Dockerfile
