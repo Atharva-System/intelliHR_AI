@@ -378,7 +378,7 @@ def ai_question_generator(request: AIQuestionRequest):
 @router.post("/generate-prompt-questions", response_model=AIPromptQuestionResponse)
 def ai_prompt_question_generator(request: AIPromptQuestionRequest):
     try:
-        if not request.items:
+        if not request.prompt:
             raise Exception("Input array is empty")
 
         return generate_prompt_based_questions(request)
