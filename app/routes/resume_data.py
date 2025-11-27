@@ -378,27 +378,14 @@ def ai_question_generator(request: AIQuestionRequest):
 @router.post("/generate-prompt-questions", response_model=AIPromptQuestionResponse)
 def ai_prompt_question_generator(request: AIPromptQuestionRequest):
     try:
-        if not request.items or len(request.items) == 0:
-            raise HTTPException(
-                status_code=404,
-                detail="Input array is empty"
-            )
+        if not request.items:
+            raise Exception("Input array is empty")
 
         return generate_prompt_based_questions(request)
-
-    except TypeError as te:
-        logger.error(f"Type error: {str(te)}", exc_info=True)
-        raise HTTPException(
-            status_code=404,
-            detail="Type error occurred: invalid input format"
-        )
-
-    except HTTPException as http_exc:
-        raise http_exc
 
     except Exception as e:
         logger.error(f"Error generating prompt-based questions: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to generate questions: {str(e)}"
+            status_code=404,
+            detail=f"Error: {str(e)}"
         )
