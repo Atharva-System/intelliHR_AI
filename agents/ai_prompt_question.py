@@ -56,7 +56,7 @@ RULES:
 
 VALID TOPICS: Technical skills, job roles, programming, management, soft skills, industry knowledge, education, business.
 
-INVALID TOPICS: Casual conversation, jokes, recipes, entertainment, personal chat, inappropriate content, gibberish.
+INVALID TOPICS: Casual conversation, jokes, recipes, entertainment, personal chat, inappropriate content, gibberish, random text,unique characters.
 
 OUTPUT FORMAT (JSON only):
 {{"questions_to_ask": ["question1", "question2", ...]}}
