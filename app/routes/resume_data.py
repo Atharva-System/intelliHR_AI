@@ -378,10 +378,14 @@ def ai_question_generator(request: AIQuestionRequest):
 @router.post("/generate-prompt-questions", response_model=AIPromptQuestionResponse)
 def ai_prompt_question_generator(request: AIPromptQuestionRequest):
     try:
+        if not request.prompt:
+            raise Exception("Input array is empty")
+
         return generate_prompt_based_questions(request)
+
     except Exception as e:
         logger.error(f"Error generating prompt-based questions: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=500, 
-            detail=f"Failed to generate questions: {str(e)}"
+            status_code=404,
+            detail=f"Error: {str(e)}"
         )
