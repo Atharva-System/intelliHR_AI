@@ -45,7 +45,7 @@ app.add_middleware(
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "service": "intelliHR-AI"}
+    return {"status": "healthy", "service": "TalentPulse.AI"}
 
 if __name__ == "__main__":
     import uvicorn
