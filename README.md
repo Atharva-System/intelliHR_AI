@@ -1,13 +1,13 @@
-# TalentPulse.AI
+# TalentPulse-AI
 
 ## Project Overview
 
-TalentPulse.AI is an AI-powered platform designed to enhance HR processes through automation, analytics, and intelligent decision-making. The project is structured for scalability and maintainability, following best practices in Python application development.
+TalentPulse-AI is an AI-powered platform designed to enhance HR processes through automation, analytics, and intelligent decision-making. The project is structured for scalability and maintainability, following best practices in Python application development.
 
 ## Project Structure
 
 ```
-TalentPulse.AI/
+TalentPulse-AI/
 ├── agents/         # AI agents and related logic
 ├── app/            # Main application code
 │   ├── main.py     # Application entry point
@@ -34,7 +34,7 @@ TalentPulse.AI/
 1. **Clone the repository:**
    ```bash
    git clone <repo-url>
-   cd TalentPulse.AI
+   cd TalentPulse-AI
    ```
 2. **Create a virtual environment:**
 
@@ -88,26 +88,26 @@ Build the Docker image for a specific environment (dev, stage, prod):
 
 ```sh
 # Development
-docker build -t TalentPulse.ai-dev --build-arg ENVIRONMENT=dev .
+docker build -t TalentPulse-ai-dev --build-arg ENVIRONMENT=dev .
 
 # Staging
-docker build -t TalentPulse.ai-stage --build-arg ENVIRONMENT=stage .
+docker build -t TalentPulse-ai-stage --build-arg ENVIRONMENT=stage .
 
 # Production
-docker build -t TalentPulse.ai-prod --build-arg ENVIRONMENT=prod .
+docker build -t TalentPulse-ai-prod --build-arg ENVIRONMENT=prod .
 ```
 
 Run the container for the chosen environment:
 
 ```sh
 # Development
-docker run -p 9090:2001 TalentPulse.ai-dev
+docker run -p 9090:2001 TalentPulse-ai-dev
 
 # Staging
-docker run -p 9090:2001 TalentPulse.ai-stage
+docker run -p 9090:2001 TalentPulse-ai-stage
 
 # Production
-docker run -p 9090:2001 TalentPulse.ai-prod
+docker run -p 9090:2001 TalentPulse-ai-prod
 ```
 
 ## Notes
