@@ -43,6 +43,7 @@ You are an expert information extractor. Extract candidate details from the give
 8. Skills must not include tool names unless explicitly listed.
 9. Do not add extra text, explanations, or comments—return JSON only.
 10. for experience_year return float value have only value after dot (ex. 2.3,4.5)
+11. If the document does not look like a resume, or if it contains ANY single mention or content that is not suitable for a professional CV (even if the rest looks professional), return a JSON object with all fields set to null. 
 
 ### AI Analysis Extraction:
 - For ai_analysis, calculate total work experience precisely:
