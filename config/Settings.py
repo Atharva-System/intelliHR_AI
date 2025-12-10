@@ -9,7 +9,13 @@ load_dotenv()
 
 
 class Settings(BaseSettings):
-    api_key: str = Field(default=os.getenv("API_KEY_1"))
+    api_keys: list[str] = Field(
+        default_factory=lambda: [
+            os.getenv("API_KEY_1"),
+            os.getenv("API_KEY_2"),
+            os.getenv("API_KEY_3"),
+        ]
+    )
 
     model: str = Field(default="gemini-2.5-flash", env="MODEL")
     max_output_tokens: int = Field(default=10000, env="MAX_OUTPUT_TOKENS")
@@ -54,19 +60,46 @@ settings = Settings()
 
 
 def get_working_api_key():
-    key = settings.api_key
-    if not key:
-        raise RuntimeError("No API key found!")
+    for idx, key in enumerate(settings.api_keys, start=1):
+        if not key:
+            continue
+        print(f"Trying API key #{idx}: {key[:6]}***")
+        try:
+            genai.configure(api_key=key)
+            model = genai.GenerativeModel(settings.model)
+            response = model.generate_content("ping")
+            if response and hasattr(response, "text"):
+                print(f"✅ Using API key #{idx}: {key[:6]}***")
+                settings.api_key = key
+                return key
+        except Exception as e:
+            error_msg = str(e).lower()
+            print(f"❌ API key #{idx}: {key[:6]}*** failed: {e}")
+            if "limit" in error_msg or "quota" in error_msg:
+                print("API key limit reached.")
+    raise RuntimeError("All API keys failed or hit limits!")
+
+settings.api_key = get_working_api_key()
+
+def set_and_validate_api_key(new_key: str) -> str:
+    if not new_key:
+        raise RuntimeError("No API key provided!")
+    print(f"Checking API key: {new_key[:6]}***")
     try:
-        genai.configure(api_key=key)
+        genai.configure(api_key=new_key)
         model = genai.GenerativeModel(settings.model)
         response = model.generate_content("ping")
         if response and hasattr(response, "text"):
-            return key
+            settings.api_key = new_key
+            return new_key
         else:
+            print(f"API key {new_key[:6]}*** failed to generate content!")
             raise RuntimeError("API key failed to generate content!")
-    except Exception:
+    except Exception as e:
+        error_msg = str(e).lower()
+        print(f"API key {new_key[:6]}*** failed: {e}")
+        if "limit" in error_msg or "quota" in error_msg:
+            print("API key limit reached.")
         raise RuntimeError("API key failed or hit limits!")
 
 
-api_key = get_working_api_key()

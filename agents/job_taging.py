@@ -4,9 +4,8 @@ from agents.types import JobTagsOutput
 from langchain.output_parsers import PydanticOutputParser
 from langchain_google_genai import GoogleGenerativeAI
 from config.Settings import settings
-from config.Settings import api_key, settings
 import google.generativeai as genai
-genai.configure(api_key=api_key)
+genai.configure(api_key=settings.api_key)
 model = genai.GenerativeModel(settings.model)
 
 def return_jd(title, experienceRange, job_description, key_responsibility,
@@ -94,7 +93,7 @@ def return_jd(title, experienceRange, job_description, key_responsibility,
 
     llm = GoogleGenerativeAI(
     model=settings.model,
-    google_api_key=api_key,
+    google_api_key=settings.api_key,
     temperature=settings.temperature,
     max_output_tokens=settings.max_output_tokens
 )

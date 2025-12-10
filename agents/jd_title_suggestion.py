@@ -5,10 +5,10 @@ from langchain_google_genai import GoogleGenerativeAI
 from agents.types import JobDescriptionTitleAISuggest
 from app.models.jd_model import JobTitleAISuggestInput
 from config.Settings import settings
-from config.Settings import api_key, settings
+from config.Settings import settings
 import google.generativeai as genai
 
-genai.configure(api_key=api_key)
+genai.configure(api_key=settings.api_key)
 model = genai.GenerativeModel(settings.model)
 
 def title_suggests(job:JobTitleAISuggestInput):
@@ -50,7 +50,7 @@ def title_suggests(job:JobTitleAISuggestInput):
 
     llm = GoogleGenerativeAI(
     model=settings.model,
-    google_api_key=api_key,
+    google_api_key=settings.api_key,
     temperature=settings.temperature,
     max_output_tokens=settings.max_output_tokens
 )

@@ -13,14 +13,14 @@ today = datetime.today()
 month = today.month
 year = today.year
 
-from config.Settings import api_key, settings
+from config.Settings import settings
 import google.generativeai as genai
 
-genai.configure(api_key=api_key)
+genai.configure(api_key=settings.api_key)
 model = genai.GenerativeModel(settings.model)
 llm = GoogleGenerativeAI(
     model=settings.model,
-    google_api_key=api_key,
+    google_api_key=settings.api_key,
     temperature=settings.temperature,
     max_output_tokens=settings.max_output_tokens
 )
