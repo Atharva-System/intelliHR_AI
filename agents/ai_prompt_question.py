@@ -3,12 +3,12 @@ import json
 from fastapi import APIRouter, HTTPException
 import google.generativeai as genai
 import logging
-from config.Settings import api_key, settings
+from config.Settings import settings
 from app.models.resume_analyze_model import AIPromptQuestionRequest, AIPromptQuestionResponse
 
 logger = logging.getLogger(__name__)
 
-genai.configure(api_key=api_key)
+genai.configure(api_key=settings.api_key)
 
 router = APIRouter()
 
