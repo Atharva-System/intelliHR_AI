@@ -103,3 +103,37 @@ def set_and_validate_api_key(new_key: str) -> str:
         raise RuntimeError("API key failed or hit limits!")
 
 
+
+def rotate_api_key():
+    print("🔄 Rotating API key due to quota limit...")
+    try:
+        new_key = get_working_api_key()
+        settings.api_key = new_key
+        genai.configure(api_key=new_key)
+        print(f"✅ Switched to new API key: {new_key[:6]}***")
+        return new_key
+    except Exception as e:
+        print(f"❌ Failed to rotate API key: {e}")
+        raise e
+
+_original_generate_content = genai.GenerativeModel.generate_content
+
+def _smart_generate_content(self, *args, **kwargs):
+    try:
+        return _original_generate_content(self, *args, **kwargs)
+    except Exception as e:
+        error_str = str(e).lower()
+        if "429" in error_str or "quota" in error_str or "limit" in error_str:
+            print(f"⚠️ Quota exceeded in generate_content. Attempting rotation...")
+            try:
+                rotate_api_key()
+                model_name = getattr(self, 'model_name', settings.model)
+                new_model = genai.GenerativeModel(model_name)
+                return _original_generate_content(new_model, *args, **kwargs)
+            except Exception as retry_error:
+                print(f"❌ Retry failed after rotation: {retry_error}")
+                raise e
+        raise e
+
+genai.GenerativeModel.generate_content = _smart_generate_content
+print("✅ Smart API Key Rotation initialized.")
