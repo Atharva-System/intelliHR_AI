@@ -58,6 +58,8 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
+_original_generate_content = genai.GenerativeModel.generate_content
+
 
 def get_working_api_key():
     for idx, key in enumerate(settings.api_keys, start=1):
@@ -67,7 +69,7 @@ def get_working_api_key():
         try:
             genai.configure(api_key=key)
             model = genai.GenerativeModel(settings.model)
-            response = model.generate_content("ping")
+            response = _original_generate_content(model, "ping")
             if response and hasattr(response, "text"):
                 print(f"✅ Using API key #{idx}: {key[:6]}***")
                 settings.api_key = key
@@ -88,7 +90,7 @@ def set_and_validate_api_key(new_key: str) -> str:
     try:
         genai.configure(api_key=new_key)
         model = genai.GenerativeModel(settings.model)
-        response = model.generate_content("ping")
+        response = _original_generate_content(model, "ping")
         if response and hasattr(response, "text"):
             settings.api_key = new_key
             return new_key
@@ -116,7 +118,7 @@ def rotate_api_key():
         print(f"❌ Failed to rotate API key: {e}")
         raise e
 
-_original_generate_content = genai.GenerativeModel.generate_content
+
 
 def _smart_generate_content(self, *args, **kwargs):
     try:
