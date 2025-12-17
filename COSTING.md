@@ -12,8 +12,6 @@
   <b>TalentPulse-AI</b> is engineered for scale. By optimizing token usage and leveraging smart agent orchestration, we deliver enterprise-grade capabilities at a fraction of the cost.
 </p>
 
-[Token Breakdown](#-token-usage-breakdown) • [Commercial Plans](#-suggested-commercial-plans) • [Profitability](#-profitability-analysis)
-
 </div>
 
 ---
