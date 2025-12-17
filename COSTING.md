@@ -16,7 +16,7 @@
 
 ---
 
-## 📊 Token Usage Breakdown
+## 📊 Token Usage Breakdown (GPT-4o-mini)
 
 Our architecture uses specialized agents to perform specific tasks, ensuring minimal token wastage.
 
