@@ -103,7 +103,7 @@ def generate_interview_questions(request: AIQuestionRequest) -> AIQuestionRespon
             "experience_match": {
                 "years_requirement_met": <boolean>,
                 "experience_level_fit": "<string>"
-            }},
+            },
             "overall_match": "<string>",
             "skill_match": {
                 "matched_skills": ["<skill1>", "<skill2>", ...],
