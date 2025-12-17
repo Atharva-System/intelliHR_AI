@@ -6,7 +6,6 @@
 
 [![Efficiency](https://img.shields.io/badge/Efficiency-Maximum-brightgreen?style=for-the-badge&logo=leaf)](https://openai.com/)
 [![Cost](https://img.shields.io/badge/Cost-Ultra_Low-blue?style=for-the-badge&logo=cashapp)](https://openai.com/pricing)
-[![Margin](https://img.shields.io/badge/Profit_Margin-85%25+-orange?style=for-the-badge&logo=graph)](https://openai.com/)
 
 <p align="center">
   <b>TalentPulse-AI</b> is engineered for scale. By optimizing token usage and leveraging smart agent orchestration, we deliver enterprise-grade capabilities at a fraction of the cost.
