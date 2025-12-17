@@ -1,6 +1,6 @@
 <div align="center">
 
-# 💎 Commercial Strategy & Cost Analysis
+# 💎 Cost Analysis
 
 ### _Unlocking High Margins with AI Efficiency_
 
