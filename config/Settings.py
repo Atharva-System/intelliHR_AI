@@ -8,6 +8,11 @@ import google.generativeai as genai
 load_dotenv()
 
 
+class QuotaLimitError(Exception):
+    """Custom exception raised when all API keys have reached their quota limit"""
+    pass
+
+
 class Settings(BaseSettings):
     api_keys: list[str] = Field(
         default_factory=lambda: [
