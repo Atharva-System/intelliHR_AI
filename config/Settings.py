@@ -16,7 +16,7 @@ class Settings(BaseSettings):
             os.getenv("API_KEY_3"),
         ]
     )
-    openai_api_key: str = Field(default_factory=lambda: os.getenv("OPENAI_API_KEY"))
+    openai_api_key: str | None = Field(default=None, env="OPENAI_API_KEY")
     model: str = Field(default="gemini-2.5-flash", env="MODEL")
     max_output_tokens: int = Field(default=10000, env="MAX_OUTPUT_TOKENS")
     temperature: float = Field(default=0.2, env="TEMPERATURE")
