@@ -12,7 +12,7 @@ import uuid
 from pathlib import Path
 from app.models.resume_analyze_model import AIPromptQuestionRequest, AIPromptQuestionResponse, AIQuestionRequest, AIQuestionResponse
 from app.services.ai_match_score import calculate_weighted_coverage_score, check_domain_relevance, check_domain_relevance_strict
-from config.Settings import settings
+from config.Settings import settings, QuotaLimitError
 from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
 from agents.resume_analyze import generate_batch_analysis
 from agents.ai_question_generate import generate_interview_questions
@@ -165,6 +165,13 @@ def extract_resume_data(file_path: Path, file_name: str) -> Dict[str, Any]:
             "extracted_info": resume_data
         }
 
+    except QuotaLimitError as qe:
+        logger.error(f"Quota limit reached for {file_name}: {str(qe)}")
+        return {
+            "file_name": file_name,
+            "status": "error",
+            "error": "All API keys have reached their quota limit. Please try again later."
+        }
     except Exception as e:
         logger.error(f"Resume extraction failed for {file_name}: {str(e)}", exc_info=True)
         return {
@@ -361,6 +368,9 @@ def batch_analyze_resumes_api(request: JobCandidateData):
         logger.info(f"Total analysis results: {len(serialized)}")
         return serialized
     
+    except QuotaLimitError as qe:
+        logger.error(f"Quota limit reached: {str(qe)}")
+        raise HTTPException(status_code=429, detail="All API keys have reached their quota limit. Please try again later.")
     except Exception as e:
         logger.error(f"Error generating batch AI analysis: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to generate batch AI analysis")
@@ -370,6 +380,9 @@ def batch_analyze_resumes_api(request: JobCandidateData):
 def ai_question_generator(request: AIQuestionRequest):
     try:
         return generate_interview_questions(request)
+    except QuotaLimitError as qe:
+        logger.error(f"Quota limit reached: {str(qe)}")
+        raise HTTPException(status_code=429, detail="All API keys have reached their quota limit. Please try again later.")
     except Exception as e:
         logger.error(f"Error generating AI job question: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to generate AI job question")
@@ -383,6 +396,9 @@ def ai_prompt_question_generator(request: AIPromptQuestionRequest):
 
         return generate_prompt_based_questions(request)
 
+    except QuotaLimitError as qe:
+        logger.error(f"Quota limit reached: {str(qe)}")
+        raise HTTPException(status_code=429, detail="All API keys have reached their quota limit. Please try again later.")
     except Exception as e:
         logger.error(f"Error generating prompt-based questions: {str(e)}", exc_info=True)
         raise HTTPException(
