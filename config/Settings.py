@@ -8,6 +8,11 @@ import google.generativeai as genai
 load_dotenv()
 
 
+class QuotaLimitError(Exception):
+    """Custom exception raised when all API keys have reached their quota limit"""
+    pass
+
+
 class Settings(BaseSettings):
     api_keys: list[str] = Field(
         default_factory=lambda: [
@@ -169,17 +174,28 @@ def find_best_config():
         print("⚠️ All Gemini keys/models failed. Switching to OpenAI Fallback Mode.")
         settings.api_key = "OPENAI_FALLBACK_MODE"
         settings.last_check_time = time.time()
+        settings.all_apis_failed = False  # OpenAI is available
         return
 
-    raise RuntimeError("All API keys and Models failed! No OpenAI key provided.")
+    # All APIs failed - set flag
+    print("❌ All API keys (Gemini and OpenAI) have reached their quota limit.")
+    settings.api_key = "ALL_APIS_FAILED"
+    settings.all_apis_failed = True
+    settings.last_check_time = time.time()
 
 # Initial Setup
 try:
     find_best_config()
 except Exception as e:
     print(f"Startup Warning: {e}")
+    settings.all_apis_failed = True
 
 def _smart_generate_content(self, *args, **kwargs):
+    # 0. Check if all APIs have failed - return immediately without executing logic
+    if getattr(settings, 'all_apis_failed', False):
+        logging.error("❌ All API keys have reached their quota limit. Request rejected.")
+        raise QuotaLimitError("All API keys have reached their quota limit. Please try again later.")
+    
     # 1. Periodic Check (Every 1 Hour)
     if hasattr(settings, 'last_check_time') and (time.time() - settings.last_check_time > 3600):
         logging.info("🕐 1 Hour passed. Attempting to restore primary Gemini keys/models...")
@@ -224,7 +240,10 @@ def _smart_generate_content(self, *args, **kwargs):
             new_model = genai.GenerativeModel(model_name)
             return _original_generate_content(new_model, *args, **kwargs)
         except:
-            raise RuntimeError("System completely unavailable (Gemini & OpenAI failed).")
+            # All APIs have failed
+            settings.all_apis_failed = True
+            logging.error("❌ System completely unavailable (Gemini & OpenAI failed).")
+            raise QuotaLimitError("All API keys have reached their quota limit. Please try again later.")
 
     # 3. Standard Gemini Call
     try:
@@ -244,6 +263,12 @@ def _smart_generate_content(self, *args, **kwargs):
                 # Rotate to next available config
                 find_best_config()
                 
+                # Check if all APIs failed
+                if settings.api_key == "ALL_APIS_FAILED":
+                    settings.all_apis_failed = True
+                    logging.error("❌ All API keys have reached their quota limit.")
+                    raise QuotaLimitError("All API keys have reached their quota limit. Please try again later.")
+                
                 # Check if we switched to OpenAI
                 if settings.api_key == "OPENAI_FALLBACK_MODE":
                      return _smart_generate_content(self, *args, **kwargs) # Recurse to hit fallback block
@@ -261,9 +286,13 @@ def _smart_generate_content(self, *args, **kwargs):
                     total_tokens = usage.total_token_count
                     logging.info(f"[{agent_name}] Input Tokens: {input_tokens} | Output Tokens: {output_tokens} | Total: {total_tokens}")
                 return response
+            except QuotaLimitError:
+                # Re-raise QuotaLimitError as-is
+                raise
             except Exception as retry_error:
                 logging.error(f"❌ Retry failed after rotation: {retry_error}")
-                raise e
+                settings.all_apis_failed = True
+                raise QuotaLimitError("All API keys have reached their quota limit. Please try again later.")
         raise e
 
 genai.GenerativeModel.generate_content = _smart_generate_content
