@@ -130,13 +130,36 @@ def call_openai_fallback(prompt, agent_name):
         logging.error(f"❌ OpenAI fallback failed: {e}")
         return None
 
-def find_best_config():
+def find_best_config(skip_openai=False):
     """
     Iterates through all Models and all API Keys.
+    Priority:
+    1. OpenAI (gpt-4o-mini)
+    2. Gemini (various models/keys)
     If a working combination is found, sets it and returns.
-    If all fail, switches to OpenAI Fallback Mode.
     """
     print("🔄 Checking for best available API key and Model...")
+
+    # 1. Try OpenAI First
+    if settings.openai_api_key and not skip_openai:
+        print("  > Testing OpenAI...")
+        try:
+            client = OpenAI(api_key=settings.openai_api_key)
+            # Simple ping
+            client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": "ping"}],
+                max_tokens=1
+            )
+            print("✅ Found working config: OpenAI (gpt-4o-mini)")
+            settings.api_key = "OPENAI_FALLBACK_MODE"
+            settings.last_check_time = time.time()
+            settings.all_apis_failed = False
+            return
+        except Exception as e:
+            print(f"    ❌ OpenAI failed: {e}")
+    
+    print("⚠️ OpenAI failed or not configured. Switching to Gemini...")
     
     # Ensure current model is first in the list if not already
     current_model = os.getenv("MODEL", "gemini-2.5-flash")
@@ -161,6 +184,7 @@ def find_best_config():
                     settings.api_key = key
                     settings.model = model_name
                     settings.last_check_time = time.time()
+                    settings.all_apis_failed = False
                     return
             except Exception as e:
                 error_msg = str(e).lower()
@@ -168,14 +192,6 @@ def find_best_config():
                     pass # Expected failure
                 else:
                     print(f"    ❌ Key #{idx} failed with {model_name}: {e}")
-
-    # If we reach here, ALL Gemini combinations failed
-    if settings.openai_api_key:
-        print("⚠️ All Gemini keys/models failed. Switching to OpenAI Fallback Mode.")
-        settings.api_key = "OPENAI_FALLBACK_MODE"
-        settings.last_check_time = time.time()
-        settings.all_apis_failed = False  # OpenAI is available
-        return
 
     # All APIs failed - set flag
     print("❌ All API keys (Gemini and OpenAI) have reached their quota limit.")
@@ -233,7 +249,7 @@ def _smart_generate_content(self, *args, **kwargs):
         # If OpenAI fails, we might want to try finding Gemini again?
         logging.error("OpenAI Fallback failed. Retrying Gemini config search...")
         try:
-            find_best_config()
+            find_best_config(skip_openai=True)
             # If found, recursively call smart_generate (which will use the new key)
             # We need to reconstruct the model though.
             model_name = settings.model
