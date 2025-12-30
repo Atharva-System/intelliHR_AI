@@ -97,6 +97,8 @@ class MockGeminiResponse:
     def json(self):
         return self.text
 
+from langsmith.wrappers import wrap_openai
+
 def call_openai_fallback(prompt, agent_name):
     if not settings.openai_api_key:
         logging.error("❌ OpenAI API key not found. Cannot fallback.")
@@ -104,7 +106,7 @@ def call_openai_fallback(prompt, agent_name):
     
     logging.info(f"⚠️ All Gemini keys failed. Falling back to OpenAI (gpt-4o-mini) for agent: {agent_name}")
     try:
-        client = OpenAI(api_key=settings.openai_api_key)
+        client = wrap_openai(OpenAI(api_key=settings.openai_api_key))
         
         # Handle prompt if it's a list (Gemini supports list of parts)
         if isinstance(prompt, list):
@@ -144,7 +146,7 @@ def find_best_config(skip_openai=False):
     if settings.openai_api_key and not skip_openai:
         print("  > Testing OpenAI...")
         try:
-            client = OpenAI(api_key=settings.openai_api_key)
+            client = wrap_openai(OpenAI(api_key=settings.openai_api_key))
             # Simple ping
             client.chat.completions.create(
                 model="gpt-4o-mini",
