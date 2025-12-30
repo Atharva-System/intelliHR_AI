@@ -4,24 +4,18 @@ import logging
 from fastapi import HTTPException
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain_google_genai import GoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from app.models.chatbot_model import ChatRequest, ChatResponse
 from config.Settings import settings
 
 FILE_PATH = "candidate_data.txt"
 
-from config.Settings import settings
-import google.generativeai as genai
-
-genai.configure(api_key=settings.api_key)
-model = genai.GenerativeModel(settings.model)
-
-llm = GoogleGenerativeAI(
+llm = ChatOpenAI(
     model=settings.model,
-    google_api_key=settings.api_key,
+    api_key=settings.openai_api_key,
     temperature=settings.temperature,
-    max_output_tokens=settings.max_output_tokens
+    max_tokens=settings.max_output_tokens
 )
 
 memory = ConversationBufferMemory()
@@ -225,7 +219,7 @@ def ask_ai(question: str):
             "question": question
         })
         
-        return response
+        return response.content
 
     except Exception as e:
         logging.error(f"Error in ask_ai: {str(e)}")
