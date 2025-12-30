@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     openai_api_key: str | None = Field(default=None, env="OPENAI_API_KEY")
     model: str = Field(default="gpt-4o-mini", env="MODEL")
     max_output_tokens: int = Field(default=10000, env="MAX_OUTPUT_TOKENS")
-    temperature: float = Field(default=0.2, env="TEMPERATURE")
+    temperature: float = Field(default=0.3, env="TEMPERATURE")
 
     save_dir: str = Field(default="downloaded_files", env="SAVE_DIR")
     max_file_size: int = Field(default=10 * 1024 * 1024, env="MAX_FILE_SIZE")
