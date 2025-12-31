@@ -23,7 +23,7 @@
 
 ### 🎯 Why TalentPulse-AI?
 
-- **🤖 Advanced AI Agents** - Multi-agent architecture powered by LangChain and Google Gemini
+- **🤖 Advanced AI Agents** - Multi-agent architecture powered by LangChain and OpenAI
 - **⚡ Lightning Fast** - Built on FastAPI for high-performance async operations
 - **🔄 Intelligent Automation** - Automated resume parsing, JD generation, and candidate evaluation
 - **📊 Data-Driven Insights** - ML-powered candidate scoring and matching algorithms
@@ -68,8 +68,7 @@
 ### **AI & Machine Learning**
 - **[LangChain](https://www.langchain.com/)** `v0.3.27` - Advanced LLM orchestration framework
 - **[LangGraph](https://github.com/langchain-ai/langgraph)** `v0.6.6` - Multi-agent workflow orchestration
-- **[Google Generative AI](https://ai.google.dev/)** `v0.8.5` - Google Gemini integration
-- **[OpenAI](https://openai.com/)** `v1.101+` - GPT model integration
+- **[OpenAI](https://openai.com/)** `v1.101+` - GPT model integration (Primary LLM)
 - **[FastEmbed](https://github.com/qdrant/fastembed)** - Fast, lightweight embedding generation
 - **[scikit-learn](https://scikit-learn.org/)** - Machine learning utilities and algorithms
 
@@ -171,7 +170,7 @@ cd TalentPulse-AI
 2️⃣ **Create and activate virtual environment**
 ```bash
 # Create virtual environment
-python3 -m venv venv
+python3 -m venv .venv
 
 # Activate on Windows PowerShell
 .\.venv\Scripts\Activate.ps1
@@ -180,11 +179,15 @@ python3 -m venv venv
 .\.venv\Scripts\activate.bat
 
 # Activate on Unix/MacOS
-source venv/bin/activate
+source .venv/bin/activate
 ```
 
 3️⃣ **Install dependencies**
 ```bash
+# Using the virtual environment's pip
+.venv/bin/python -m pip install -r requirements.txt
+
+# Or if virtual environment is activated
 pip install -r requirements.txt
 ```
 
@@ -199,14 +202,32 @@ cp env_example .env
 
 5️⃣ **Run the application**
 ```bash
-# Development mode with auto-reload
+# Development mode with auto-reload (using virtual environment's Python)
+# Unix/MacOS/Linux
+.venv/bin/python -m uvicorn app.main:app --reload
+
+# Windows PowerShell
+.\.venv\Scripts\python -m uvicorn app.main:app --reload
+
+# Windows CMD
+.venv\Scripts\python -m uvicorn app.main:app --reload
+
+# Or if virtual environment is activated (all platforms)
 uvicorn app.main:app --reload
 
 # Production mode
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+# Unix/MacOS/Linux
+.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# Windows
+.\.venv\Scripts\python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 # Custom port
-uvicorn app.main:app --reload --port 8080
+# Unix/MacOS/Linux
+.venv/bin/python -m uvicorn app.main:app --reload --port 8080
+
+# Windows
+.\.venv\Scripts\python -m uvicorn app.main:app --reload --port 8080
 ```
 
 🎉 **Your API is now running!**
@@ -316,8 +337,8 @@ API_HOST=0.0.0.0
 API_PORT=8000
 DEBUG_MODE=true
 
-# AI Model Configuration - Multiple Keys for Fallback
-OPENAI_API_KEY=your_openai_api_key_for_fallback
+# OpenAI API Configuration
+OPENAI_API_KEY=your_openai_api_key_here
 
 # Model Configuration
 MODEL=gpt-4o-mini
@@ -343,253 +364,6 @@ LOG_FILE=app.log
 - `.env.dev` - Development configuration
 - `.env.stage` - Staging configuration  
 - `.env.prod` - Production configuration
-
----
-
-## 🛡️ Intelligent API Fallback System
-
-TalentPulse-AI features a **sophisticated, zero-downtime API fallback mechanism** that ensures continuous operation even when primary API keys reach quota limits. This system provides enterprise-grade resilience and reliability.
-
-### 🎯 Key Features
-
-- **🔄 Automatic Key Rotation** - Seamlessly switches between multiple Gemini API keys
-- **🌐 Multi-Model Support** - Falls back across different Gemini models (2.5-flash → 1.5-flash → 1.5-pro)
-- **🔀 OpenAI Fallback** - Automatically switches to OpenAI GPT-4o-mini when all Gemini keys are exhausted
-- **🔍 Transparent Operation** - Agents work without any code changes
-- **📊 Usage Tracking** - Logs token consumption for all API calls
-- **⏰ Periodic Recovery** - Automatically attempts to restore primary keys every hour
-
-### 🏗️ Architecture Overview
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Agent Layer (LangChain)                   │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  GoogleGenerativeAI (LangChain Wrapper)              │   │
-│  └──────────────────────────────────────────────────────┘   │
-└─────────────────────────┬───────────────────────────────────┘
-                          ↓
-┌─────────────────────────────────────────────────────────────┐
-│              google.generativeai SDK Layer                   │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  genai.GenerativeModel.generate_content()            │   │
-│  │  ⚠️  MONKEY PATCHED → _smart_generate_content()      │   │
-│  └──────────────────────────────────────────────────────┘   │
-└─────────────────────────┬───────────────────────────────────┘
-                          ↓
-┌─────────────────────────────────────────────────────────────┐
-│            Smart Fallback Logic (Settings.py)                │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  1. Check if all APIs failed → Reject immediately    │   │
-│  │  2. Periodic check (hourly) → Try restore primary    │   │
-│  │  3. Detect fallback mode → Route to OpenAI          │   │
-│  │  4. Try Gemini call → Handle quota errors           │   │
-│  │  5. On quota error → Rotate to next config          │   │
-│  └──────────────────────────────────────────────────────┘   │
-└─────────────────────────┬───────────────────────────────────┘
-                          ↓
-        ┌─────────────────┴─────────────────┐
-        ↓                                   ↓
-┌──────────────────┐              ┌──────────────────┐
-│  Gemini API      │              │  OpenAI API      │
-│  (Primary)       │              │  (Fallback)      │
-│                  │              │                  │
-│  • gemini-2.5    │              │  • gpt-4o-mini   │
-│  • gemini-1.5    │              │                  │
-└──────────────────┘              └──────────────────┘
-```
-
-### 🔄 Fallback Flow
-
-#### **Scenario 1: Normal Operation (Gemini)**
-```
-1. Agent invokes LLM
-2. _smart_generate_content() intercepts
-3. Checks: settings.api_key != "OPENAI_FALLBACK_MODE"
-4. Calls Gemini API with current key
-5. Returns response
-6. Logs token usage
-```
-
-#### **Scenario 2: Quota Exceeded - Key Rotation**
-```
-1. Agent invokes LLM
-2. _smart_generate_content() intercepts
-3. Gemini API call fails with 429 (quota exceeded)
-4. Triggers find_best_config()
-5. Tests all combinations:
-   - API_KEY_1 + gemini-2.5-flash
-   - API_KEY_1 + gemini-1.5-flash
-   - API_KEY_1 + gemini-1.5-pro
-   - API_KEY_2 + gemini-2.5-flash
-   - ... (continues through all keys)
-6. Finds working combination
-7. Updates settings.api_key and settings.model
-8. Retries request with new config
-9. Returns response
-```
-
-#### **Scenario 3: All Gemini Keys Exhausted - OpenAI Fallback**
-```
-1. Agent invokes LLM
-2. _smart_generate_content() intercepts
-3. All Gemini combinations fail
-4. find_best_config() sets: settings.api_key = "OPENAI_FALLBACK_MODE"
-5. Detects fallback mode
-6. Calls call_openai_fallback()
-7. Converts prompt to OpenAI format
-8. Calls OpenAI API (gpt-4o-mini)
-9. Wraps response in MockGeminiResponse
-10. Returns disguised response
-11. Agent receives "Gemini-like" response
-```
-
-#### **Scenario 4: All APIs Failed**
-```
-1. Agent invokes LLM
-2. _smart_generate_content() intercepts
-3. Checks: settings.all_apis_failed == True
-4. Immediately raises QuotaLimitError
-5. Returns error to user without processing
-```
-
-### 🎭 Response Transformation
-
-When using OpenAI fallback, responses are transformed to maintain compatibility:
-
-**OpenAI Response:**
-```python
-{
-  "choices": [{"message": {"content": "AI response here"}}],
-  "usage": {
-    "prompt_tokens": 150,
-    "completion_tokens": 75,
-    "total_tokens": 225
-  }
-}
-```
-
-**Transformed to Gemini Format:**
-```python
-MockGeminiResponse(
-  text="AI response here",
-  usage_metadata={
-    prompt_token_count: 150,
-    candidates_token_count: 75,
-    total_token_count: 225
-  },
-  candidates=[MockCandidate(content=MockContent(...))]
-)
-```
-
-### ⚙️ Configuration
-
-#### **Multiple Gemini Keys Setup**
-```env
-# Primary key (highest priority)
-API_KEY_1=AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-# Secondary key (used when primary exhausted)
-API_KEY_2=AIzaSyYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
-
-# Tertiary key (used when secondary exhausted)
-API_KEY_3=AIzaSyZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
-
-# OpenAI fallback (used when all Gemini keys exhausted)
-OPENAI_API_KEY=sk-proj-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-```
-
-#### **Model Priority**
-The system tries models in this order:
-1. `gemini-2.5-flash` (fastest, most cost-effective)
-2. `gemini-1.5-flash` (fallback)
-3. `gemini-1.5-pro` (most capable)
-4. `gpt-4o-mini` (OpenAI fallback)
-
-### 📊 Monitoring & Logging
-
-The system logs all API operations:
-
-```log
-🔄 Checking for best available API key and Model...
-  > Testing Model: gemini-2.5-flash
-✅ Found working config: Model=gemini-2.5-flash, Key=#1 (AIzaSy***)
-[ai_feedback] Input Tokens: 245 | Output Tokens: 128 | Total: 373
-
-⚠️ Quota exceeded. Initiating full rotation strategy...
-✅ Found working config: Model=gemini-1.5-flash, Key=#2 (AIzaSy***)
-
-⚠️ All Gemini keys/models failed. Switching to OpenAI Fallback Mode.
-⚠️ All Gemini keys failed. Falling back to OpenAI (gpt-4o-mini) for agent: ai_feedback
-[ai_feedback] (OpenAI Fallback) Input Tokens: 245 | Output Tokens: 128 | Total: 373
-
-❌ All API keys have reached their quota limit. Request rejected.
-```
-
-### 🔍 How Agents Use OpenAI (Technical Deep Dive)
-
-**Question:** *"How does an agent initialized with `GoogleGenerativeAI` use OpenAI?"*
-
-**Answer:** Through **transparent interception at the SDK level**:
-
-1. **Agent Definition** (No changes needed):
-```python
-llm = GoogleGenerativeAI(
-    model=settings.model,
-    google_api_key=settings.api_key,
-    temperature=settings.temperature
-)
-```
-
-2. **Monkey Patch Applied** (Automatic at startup):
-```python
-# In config/Settings.py
-genai.GenerativeModel.generate_content = _smart_generate_content
-```
-
-3. **Execution Flow**:
-   - Agent calls `llm.invoke(prompt)`
-   - LangChain calls `genai.GenerativeModel.generate_content()`
-   - **Intercepted** by `_smart_generate_content()`
-   - Checks `settings.api_key == "OPENAI_FALLBACK_MODE"`
-   - Routes to `call_openai_fallback()` if true
-   - Makes OpenAI API call
-   - Wraps response to look like Gemini
-   - Returns to LangChain (thinks it's Gemini!)
-   - Agent receives response (unaware of switch)
-
-**Key Insight:** The credentials passed to `GoogleGenerativeAI()` constructor are **ignored during fallback**. The global `settings.api_key` determines routing.
-
-### 🚨 Error Handling
-
-```python
-try:
-    result = enhance_feedback(request)
-except QuotaLimitError as e:
-    # All APIs exhausted
-    return {"error": "Service temporarily unavailable. Quota limit reached."}
-except Exception as e:
-    # Other errors
-    return {"error": str(e)}
-```
-
-### ⏰ Automatic Recovery
-
-Every **60 minutes**, the system attempts to restore primary Gemini keys:
-```python
-if time.time() - settings.last_check_time > 3600:
-    logging.info("🕐 1 Hour passed. Attempting to restore primary Gemini keys...")
-    find_best_config()
-```
-
-### ✅ Benefits
-
-- **Zero Downtime** - Continuous operation even during quota limits
-- **Cost Optimization** - Uses cheaper Gemini models first
-- **Transparent** - No code changes in agents
-- **Resilient** - Multiple fallback layers
-- **Observable** - Comprehensive logging
-- **Self-Healing** - Automatic recovery attempts
 
 ---
 
