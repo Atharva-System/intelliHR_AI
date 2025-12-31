@@ -19,17 +19,54 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
     raw_prompt = """
     You are an expert AI recruiter and resume analyzer.
 
-    Your task is to evaluate candidates against job requirements and produce a structured JSON response for each candidate that includes detailed AI insights, match scoring, and reasoning.
+    Your task is to evaluate ONE candidate against ONE job using STRICT SCORING RULES.
+    You MUST calculate scores mathematically. Do NOT guess.
 
-    ### Instructions:
-    1. Analyze the candidate's profile in relation to the job description.
-    2. Calculate a **matchScore** (0–100) representing overall job fit.
-    3. Populate **aiInsights** fields based on the candidate's resume and job needs.
-    4. Fill all fields using realistic, data-consistent values.
-    5. Return **only valid JSON** — no markdown, no explanations, no extra text.
+    ━━━━━━━━━━━
+    SCORING RULES (MANDATORY)
+    ━━━━━━━━━━━
 
-    ### JSON Response Format (Strict Schema)
-    Each analyzed candidate must follow this exact JSON schema:
+    1. coreSkillsScore (0–100)
+    - 90–100: Meets all required + most preferred skills
+    - 70–89: Meets all required skills
+    - 40–69: Missing some required skills
+    - 0–39: Missing most required skills
+
+    2. experienceScore (0–100)
+    - 90–100: Experience exceeds requirement
+    - 70–89: Meets requirement
+    - 40–69: Slightly below requirement
+    - 0–39: Well below requirement
+
+    3. culturalFitScore (0–100)
+    - Default to 60 if culture data is unclear
+    - Adjust ±20 based on leadership, communication, adaptability
+
+    ━━━━━━━━━━━
+    FINAL SCORE FORMULA (STRICT)
+    ━━━━━━━━━━━
+
+    matchScore =
+    (coreSkillsScore × 0.5) +
+    (experienceScore × 0.3) +
+    (culturalFitScore × 0.2)
+
+    RULES:
+    - matchScore MUST equal the formula result
+    - Round all scores to nearest integer
+    - Do NOT invent skills or experience
+    - If data is missing, LOWER the score
+
+    ━━━━━━━━━━━
+    OUTPUT REQUIREMENTS
+    ━━━━━━━━━━━
+
+    Return ONLY valid JSON.
+    No markdown. No explanations.
+
+    ━━━━━━━━━━━
+    JSON SCHEMA (STRICT)
+    ━━━━━━━━━━━
 
     {{
     "job_id": "string",
@@ -81,16 +118,9 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
     "notes": ["string"]
     }}
 
-    ### Guidelines:
-    - Use realistic data (no placeholders like "string").
-    - Compute scores logically:
-        - **matchScore** = weighted blend of skills, experience, and fit.
-        - **coreSkillsScore**, **experienceScore**, and **culturalFitScore** reflect alignment.
-    - Include 2–3 **strengths**, 1–2 **concerns**, and 2–3 **skillMatches** or **skillGaps**.
-    - `lastAnalyzedAt` must be the current date-time in ISO 8601 format.
-    - Include `job_id` from job data.
-    - `availability` and `phone` come from candidate data.
-    - Return **only JSON** — no text, markdown, or backticks.
+    ━━━━━━━━━━━
+    DATA
+    ━━━━━━━━━━━
 
     ### Data for Evaluation:
     Job Information:
@@ -99,8 +129,6 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
     Candidate Information:
     {candidate_json}
 
-    ### Output:
-    Return a **single candidate JSON object** following the schema above.
     """
 
     prompt = PromptTemplate.from_template(raw_prompt)
