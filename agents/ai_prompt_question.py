@@ -1,14 +1,12 @@
 import re
 import json
 from fastapi import APIRouter, HTTPException
-import google.generativeai as genai
+from langchain_openai import ChatOpenAI
 import logging
 from config.Settings import settings
 from app.models.resume_analyze_model import AIPromptQuestionRequest, AIPromptQuestionResponse
 
 logger = logging.getLogger(__name__)
-
-genai.configure(api_key=settings.api_key)
 
 router = APIRouter()
 
@@ -38,12 +36,11 @@ def generate_prompt_based_questions(request: AIPromptQuestionRequest) -> AIPromp
         return AIPromptQuestionResponse(questions_to_ask=[])
     
     # Initialize model
-    model = genai.GenerativeModel(
-        model_name=settings.model,
-        generation_config={
-            "temperature": getattr(settings, 'temperature', 0.7),
-            "max_output_tokens": getattr(settings, 'max_output_tokens', 2048),
-        }
+    llm = ChatOpenAI(
+        model=settings.model,
+        api_key=settings.openai_api_key,
+        temperature=settings.temperature,
+        max_tokens=settings.max_output_tokens
     )
     
     prompt = f"""You are an interview question generator.
@@ -67,12 +64,12 @@ If invalid prompt, return:
 Return ONLY JSON, nothing else."""
 
     try:
-        response = model.generate_content(prompt)
+        response = llm.invoke(prompt)
         
-        if not response or not response.text:
+        if not response or not response.content:
             return AIPromptQuestionResponse(questions_to_ask=[])
         
-        output_text = clean_llm_output(response.text)
+        output_text = clean_llm_output(response.content)
         
         if not output_text:
             return AIPromptQuestionResponse(questions_to_ask=[])
