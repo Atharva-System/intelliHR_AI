@@ -3,16 +3,10 @@ from pydantic import BaseModel
 from typing import List, Dict
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain_google_genai import GoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 import json
 from app.models.resume_analyze_model import AIQuestionRequest, AIQuestionResponse
 from config.Settings import settings
-from config.Settings import settings
-import google.generativeai as genai
-
-genai.configure(api_key=settings.api_key)
-model = genai.GenerativeModel(settings.model)
-
 
 def escape_prompt(text: str) -> str:
     """
@@ -25,11 +19,11 @@ def escape_prompt(text: str) -> str:
 
 
 def generate_interview_questions(request: AIQuestionRequest) -> AIQuestionResponse:
-    llm = GoogleGenerativeAI(
+    llm = ChatOpenAI(
         model=settings.model,
-        google_api_key=settings.api_key,
+        api_key=settings.openai_api_key,
         temperature=settings.temperature,
-        max_output_tokens=settings.max_output_tokens
+        max_tokens=settings.max_output_tokens
     )
     
     

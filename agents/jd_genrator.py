@@ -2,13 +2,8 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from agents.types import JobDescriptionOutline
 from langchain.output_parsers import PydanticOutputParser
-from langchain_google_genai import GoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from config.Settings import settings
-from config.Settings import settings
-import google.generativeai as genai
-
-genai.configure(api_key=settings.api_key)
-model = genai.GenerativeModel(settings.model)
 
 def return_jd(title, experienceRange, department, subDepartment):
     template = """
@@ -41,12 +36,12 @@ def return_jd(title, experienceRange, department, subDepartment):
     parser = PydanticOutputParser(pydantic_object=JobDescriptionOutline)
 
 
-    llm = GoogleGenerativeAI(
-    model=settings.model,
-    google_api_key=settings.api_key,
-    temperature=settings.temperature,
-    max_output_tokens=settings.max_output_tokens
-)
+    llm = ChatOpenAI(
+        model=settings.model,
+        api_key=settings.openai_api_key,
+        temperature=settings.temperature,
+        max_tokens=settings.max_output_tokens
+    )
 
     chain = LLMChain(llm=llm,prompt=prompt,verbose=True,output_parser=parser)
     raw_output = chain.invoke({

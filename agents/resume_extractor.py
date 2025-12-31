@@ -1,7 +1,7 @@
 import json
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain_google_genai import GoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain.output_parsers import PydanticOutputParser
 from agents.types import CandidateAllInOne
 from app.services.text_extract import pdf_to_text
@@ -13,16 +13,11 @@ today = datetime.today()
 month = today.month
 year = today.year
 
-from config.Settings import settings
-import google.generativeai as genai
-
-genai.configure(api_key=settings.api_key)
-model = genai.GenerativeModel(settings.model)
-llm = GoogleGenerativeAI(
+llm = ChatOpenAI(
     model=settings.model,
-    google_api_key=settings.api_key,
+    api_key=settings.openai_api_key,
     temperature=settings.temperature,
-    max_output_tokens=settings.max_output_tokens
+    max_tokens=settings.max_output_tokens
 )
 
 parser = PydanticOutputParser(pydantic_object=CandidateAllInOne)
@@ -214,7 +209,7 @@ def resume_extract_info(pdf_path):
         candidate = candidate_extraction_chain.run(text=input_text,month=month,year=year)
         result = json.loads(candidate.json())  # Parse the JSON string into a dictionary
     except Exception:
-        raw_output = llm(f"Extract JSON only from this text:\n{input_text}")
+        raw_output = llm.invoke(f"Extract JSON only from this text:\n{input_text}").content
         try:
             result = json.loads(raw_output)  # Ensure this is a dictionary
         except json.JSONDecodeError as json_err:

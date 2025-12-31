@@ -1,18 +1,14 @@
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
-from langchain_google_genai import GoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from config.Settings import settings
-import google.generativeai as genai
 from app.models.feedback_model import EnhanceFeedbackRequest,EnhanceFeedbackResponse
 
-
-genai.configure(api_key=settings.api_key)
-
-llm = GoogleGenerativeAI(
+llm = ChatOpenAI(
     model=settings.model,
-    google_api_key=settings.api_key,
+    api_key=settings.openai_api_key,
     temperature=settings.temperature,
-    max_output_tokens=settings.max_output_tokens
+    max_tokens=settings.max_output_tokens
 )
 
 parser = PydanticOutputParser(pydantic_object=EnhanceFeedbackResponse)
