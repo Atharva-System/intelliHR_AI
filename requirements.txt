@@ -86,5 +86,4 @@ xxhash==3.5.0
 zstandard==0.24.0
 pydantic-settings
 scikit-learn
-fastembed
 langchain-community

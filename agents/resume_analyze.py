@@ -12,7 +12,7 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
     llm = ChatOpenAI(
         model=settings.model,
         api_key=settings.openai_api_key,
-        temperature=settings.temperature,
+        temperature=0,
         max_tokens=settings.max_output_tokens
     )
 
