@@ -17,7 +17,8 @@ from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisRe
 from agents.resume_analyze import generate_batch_analysis
 from agents.ai_question_generate import generate_interview_questions
 from sklearn.metrics.pairwise import cosine_similarity
-from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+from langchain_openai import OpenAIEmbeddings
+from langsmith import traceable
 import numpy as np
 logger = logging.getLogger(__name__)
 
@@ -294,13 +295,14 @@ def parse_resumes(payload: MultipleFiles):
 
 
 @router.post("/ai/batch-analyze-resumes", response_model=List[CandidateAnalysisResponse])
+@traceable(name="batch_analyze_resumes", run_type="chain", metadata={"endpoint": "ai-match"})
 def batch_analyze_resumes_api(request: JobCandidateData):
     try:
         num_candidates = len(request.candidates) if request.candidates else 0
         num_jobs = len(request.jobs) if request.jobs else 0
         logger.info(f"Received batch analyze request with {num_candidates} candidates and {num_jobs} jobs")
         
-        embeddings = FastEmbedEmbeddings()
+        embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
         all_results = []
 
         MINIMUM_ELIGIBLE_SCORE = settings.minimum_eligible_score      
