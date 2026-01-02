@@ -1,4 +1,5 @@
 import json
+import time
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
@@ -8,10 +9,7 @@ from app.services.text_extract import pdf_to_text
 from config.Settings import settings
 from datetime import datetime
 
-today = datetime.today()
 
-month = today.month
-year = today.year
 
 llm = ChatOpenAI(
     model=settings.model,
@@ -45,9 +43,10 @@ You are an expert information extractor. Extract candidate details from the give
   1. For each work_experience entry, determine duration:
      - If start_date and end_date are provided, compute months difference.
      - If end_date is missing:
-       - If is_current=true → use current month {month} and year {year}.
+       - If it is the most recent work experience or is_current=true → use current month {month} and year {year}.
        - Else → assume end_date is **the start_date of the next work_experience minus one month**.
      - If end_date is "Till date", "Present", or similar, use current month and year.
+     - If end_date is not mentioned and it's the current role, use current month and year.
      - If only year is given, assume January as start month and December as end month.
   2. Sum all months across all work_experience entries.
   3. Convert total months to years as a float with **one decimal**:
@@ -205,8 +204,14 @@ candidate_extraction_chain = LLMChain(
 
 def resume_extract_info(pdf_path):
     input_text = pdf_to_text(pdf_path)
+    
+    # Get current month and year using time library
+    current_time = time.localtime()
+    month = current_time.tm_mon
+    year = current_time.tm_year
+    
     try:
-        candidate = candidate_extraction_chain.run(text=input_text,month=month,year=year)
+        candidate = candidate_extraction_chain.run(text=input_text, month=month, year=year)
         result = json.loads(candidate.json())  # Parse the JSON string into a dictionary
     except Exception:
         raw_output = llm.invoke(f"Extract JSON only from this text:\n{input_text}").content
