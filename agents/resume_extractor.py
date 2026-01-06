@@ -99,15 +99,7 @@ Follow these rules carefully:
      - For QA: "Software Testing", "Test Automation", "Quality Assurance", "API Testing"
      - For Dev: "Software Development", "Web Development", "Backend Development", "Frontend Development"
 
-  4. **Experience & Level Tags:**  
-     - Based on calculated experience_year, generate the EXACT level tag from this list:
-     - "Entry Level (0-1 years)" for 0 to <1 year
-     - "Junior (1-3 years)" for 1 to <3 years
-     - "Mid Level (3-5 years)" for 3 to <5 years
-     - "Mid-Senior Level (5-8 years)" for 5 to <8 years
-     - "Senior (8-12 years)" for 8 to <12 years
-     - "Lead/Principal (12-15 years)" for 12 to <15 years
-     - "Principal/Director (15+ years)" for 15+ years
+
 
   5. **Methodology / Process Tags (if applicable):**  
      - Examples: "Agile", "Scrum", "CI/CD", "DevOps", "TDD", "BDD", "Microservices"
@@ -225,5 +217,29 @@ def resume_extract_info(pdf_path):
             result = json.loads(raw_output)  # Ensure this is a dictionary
         except json.JSONDecodeError as json_err:
             raise Exception(f"Failed to parse extracted JSON: {str(json_err)}")
+
+    # Manually add Experience Level Tag based on experience_year
+    if result.get('ai_analysis') and result['ai_analysis'].get('experience_year') is not None:
+        exp_year = result['ai_analysis']['experience_year']
+        level_tag = ""
+        
+        if 0 <= exp_year < 1:
+            level_tag = "Entry Level"
+        elif 1 <= exp_year < 3:
+            level_tag = "Junior"
+        elif 3 <= exp_year < 5:
+            level_tag = "Mid Level"
+        elif 5 <= exp_year < 8:
+            level_tag = "Mid-Senior Level"
+        elif 8 <= exp_year < 12:
+            level_tag = "Senior"
+        elif 12 <= exp_year < 15:
+            level_tag = "Lead/Principal"
+        elif exp_year >= 15:
+            level_tag = "Principal/Director"
+        
+        if level_tag:
+            result['ai_analysis']['experience_level'] = level_tag
+
     print(result)
     return result
