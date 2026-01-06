@@ -100,8 +100,14 @@ Follow these rules carefully:
      - For Dev: "Software Development", "Web Development", "Backend Development", "Frontend Development"
 
   4. **Experience & Level Tags:**  
-     - Based on calculated experience_year
-     - Examples: "Fresher", "2+ Years Experience", "Senior Engineer", "5+ Years Experience", "8+ Years Experience", "Mid-Level Professional", "Lead Engineer"
+     - Based on calculated experience_year, generate the EXACT level tag from this list:
+     - "Entry Level (0-1 years)" for 0 to <1 year
+     - "Junior (1-3 years)" for 1 to <3 years
+     - "Mid Level (3-5 years)" for 3 to <5 years
+     - "Mid-Senior Level (5-8 years)" for 5 to <8 years
+     - "Senior (8-12 years)" for 8 to <12 years
+     - "Lead/Principal (12-15 years)" for 12 to <15 years
+     - "Principal/Director (15+ years)" for 15+ years
 
   5. **Methodology / Process Tags (if applicable):**  
      - Examples: "Agile", "Scrum", "CI/CD", "DevOps", "TDD", "BDD", "Microservices"
