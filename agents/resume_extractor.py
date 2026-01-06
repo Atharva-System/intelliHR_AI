@@ -43,7 +43,7 @@ You are an expert information extractor. Extract candidate details from the give
   1. For each work_experience entry, determine duration:
      - If start_date and end_date are provided, compute months difference.
      - If end_date is missing:
-       - If it is the most recent work experience or is_current=true → use current month {month} and year {year}.
+       - use current month {month} and year {year}.
        - Else → assume end_date is **the start_date of the next work_experience minus one month**.
      - If end_date is "Till date", "Present", or similar, use current month and year.
      - If end_date is not mentioned and it's the current role, use current month and year.
