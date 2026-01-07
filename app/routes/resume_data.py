@@ -14,7 +14,7 @@ from app.models.resume_analyze_model import AIPromptQuestionRequest, AIPromptQue
 from app.services.ai_match_score import calculate_weighted_coverage_score, check_domain_relevance, check_domain_relevance_strict
 from config.Settings import settings, QuotaLimitError
 from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
-from agents.resume_analyze import generate_batch_analysis
+from agents.resume_analyze import generate_batch_analysis_async
 from agents.ai_question_generate import generate_interview_questions
 from sklearn.metrics.pairwise import cosine_similarity
 from langchain_openai import OpenAIEmbeddings
@@ -296,48 +296,52 @@ def parse_resumes(payload: MultipleFiles):
 
 @router.post("/ai/batch-analyze-resumes", response_model=List[CandidateAnalysisResponse])
 @traceable(name="batch_analyze_resumes", run_type="chain", metadata={"endpoint": "ai-match"})
-def batch_analyze_resumes_api(request: JobCandidateData):
+async def batch_analyze_resumes_api(request: JobCandidateData):
     try:
         num_candidates = len(request.candidates) if request.candidates else 0
         num_jobs = len(request.jobs) if request.jobs else 0
         logger.info(f"Received batch analyze request with {num_candidates} candidates and {num_jobs} jobs")
-        
+
+        if not request.candidates or not request.jobs:
+            logger.warning("Empty candidates or jobs list")
+            return []
+
         embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
         all_results = []
 
-        MINIMUM_ELIGIBLE_SCORE = settings.minimum_eligible_score      
-        
+        MINIMUM_ELIGIBLE_SCORE = settings.minimum_eligible_score
+
         for job in request.jobs or []:
             job_eligible_candidates = []
-            
+
             for candidate in request.candidates or []:
-        
+
                 if not candidate.candidate_tag or len(candidate.candidate_tag) == 0:
                     logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId}: "
                                f"No candidate tags, auto-include")
                     job_eligible_candidates.append(candidate)
                     continue
-                    
+
                 if not job.job_tag or len(job.job_tag) == 0:
                     logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId}: "
                                f"No job tags, auto-include")
                     job_eligible_candidates.append(candidate)
                     continue
-                
+
                 try:
-                    
+
                     relevance_score = check_domain_relevance_strict(
                         candidate.candidate_tag,
                         job.job_tag,
                         embeddings
                     )
-                    
+
                     match_score = calculate_weighted_coverage_score(
                         candidate.candidate_tag,
                         job.job_tag,
                         embeddings
                     )
-                    
+
                     if match_score >= MINIMUM_ELIGIBLE_SCORE:
                         job_eligible_candidates.append(candidate)
                         logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId}: "
@@ -345,31 +349,31 @@ def batch_analyze_resumes_api(request: JobCandidateData):
                     else:
                         logger.info(f"Job {job.job_id} - Candidate {candidate.candidateId}: "
                                    f"Relevance {relevance_score:.1f}%, Score {match_score:.1f}% - REJECTED")
-                        
+
                 except Exception as e:
                     logger.warning(f"Error calculating match for job {job.job_id} "
                                   f"candidate {candidate.candidateId}: {str(e)}")
                     job_eligible_candidates.append(candidate)
-            
+
             if job_eligible_candidates:
                 logger.info(f"Job {job.job_id} has {len(job_eligible_candidates)} eligible candidates "
                            f"(filtered from {num_candidates} total)")
-                
+
                 job_specific_request = JobCandidateData(
                     jobs=[job],
                     candidates=job_eligible_candidates,
                     threshold=request.threshold,
                     cosine_score=MINIMUM_ELIGIBLE_SCORE
                 )
-                job_results = generate_batch_analysis(job_specific_request)
+                job_results = await generate_batch_analysis_async(job_specific_request)
                 all_results.extend(job_results)
             else:
                 logger.warning(f"Job {job.job_id} has NO eligible candidates after filtering")
-     
+
         serialized = [r.dict(exclude_none=True) for r in all_results]
         logger.info(f"Total analysis results: {len(serialized)}")
         return serialized
-    
+
     except QuotaLimitError as qe:
         logger.error(f"Quota limit reached: {str(qe)}")
         raise HTTPException(status_code=429, detail="All API keys have reached their quota limit. Please try again later.")
@@ -388,7 +392,7 @@ def ai_question_generator(request: AIQuestionRequest):
     except Exception as e:
         logger.error(f"Error generating AI job question: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to generate AI job question")
-    
+
 
 @router.post("/generate-prompt-questions", response_model=AIPromptQuestionResponse)
 def ai_prompt_question_generator(request: AIPromptQuestionRequest):
