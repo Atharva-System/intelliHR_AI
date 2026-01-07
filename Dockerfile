@@ -24,4 +24,4 @@ EXPOSE 80
 ENV PYTHONPATH=/app
 
 # Run the FastAPI application using uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80", "--workers", "4", "--timeout-keep-alive", "1200"]
