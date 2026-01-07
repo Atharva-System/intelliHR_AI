@@ -1,2 +1,8 @@
 API_KEY=
 MODEL=gpt-4o-mini
+
+# Batch Processing Configuration
+# Maximum number of concurrent LLM API calls for batch resume analysis
+# Higher values = faster processing but more API rate limit risk
+# Recommended: 5-15 depending on your API tier
+BATCH_CONCURRENT_LIMIT=10

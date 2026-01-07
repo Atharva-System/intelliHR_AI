@@ -7,8 +7,20 @@ from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
 from config.Settings import settings
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+import logging
+
+logger = logging.getLogger(__name__)
 
 def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysisResponse]:
+    """Synchronous wrapper for async batch analysis"""
+    return asyncio.run(generate_batch_analysis_async(request))
+
+
+async def generate_batch_analysis_async(request: JobCandidateData) -> List[CandidateAnalysisResponse]:
+    """Async batch analysis with concurrent processing"""
+    max_concurrent = settings.batch_concurrent_limit
     llm = ChatOpenAI(
         model=settings.model,
         api_key=settings.openai_api_key,
@@ -134,54 +146,86 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
     prompt = PromptTemplate.from_template(raw_prompt)
     chain = LLMChain(llm=llm, prompt=prompt)
 
-    all_results = []
-
+    # Create list of all job-candidate pairs to process
+    tasks = []
     for job in request.jobs or []:
         for candidate in request.candidates or []:
-            job_json = json.dumps(job.dict(exclude_none=True), indent=2)
-            candidate_json = json.dumps(candidate.dict(exclude_none=True), indent=2)
+            tasks.append((job, candidate, chain))
 
-            raw_output = chain.invoke({"job_json": job_json, "candidate_json": candidate_json})
-            output_text = raw_output["text"] if isinstance(raw_output, dict) else raw_output
-            output_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", output_text.strip(), flags=re.DOTALL)
+    logger.info(f"Processing {len(tasks)} job-candidate pairs concurrently (max {max_concurrent} at a time)")
 
+    # Process tasks concurrently with semaphore for rate limiting
+    semaphore = asyncio.Semaphore(max_concurrent)
+
+    async def process_single_analysis(job, candidate, chain):
+        async with semaphore:
             try:
-                response = json.loads(output_text)
-            except Exception:
-                cleaned = re.search(r"\{.*\}", output_text, re.DOTALL)
-                response = json.loads(cleaned.group(0)) if cleaned else {}
+                return await asyncio.to_thread(_analyze_candidate_for_job, job, candidate, chain)
+            except Exception as e:
+                logger.error(f"Error processing candidate {getattr(candidate, 'candidateId', 'unknown')}: {str(e)}")
+                return None
 
-            response["job_id"] = job.job_id or ""
-            response["id"] = response.get("id") or getattr(candidate, "candidateId", "") or ""
-            response["firstName"] = response.get("firstName") or getattr(candidate, "name", "").split()[0] if getattr(candidate, "name", None) else ""
-            response["lastName"] = response.get("lastName") or " ".join(getattr(candidate, "name", "").split()[1:]) if getattr(candidate, "name", None) else ""
-            response["email"] = response.get("email") or getattr(candidate, "email", "") or ""
-            response["phone"] = response.get("phone") or getattr(candidate, "phone", "") or ""
-            response["currentTitle"] = response.get("currentTitle") or getattr(candidate, "currentTitle", "") or ""
-            response["experienceYears"] = response.get("experienceYears") or getattr(candidate, "experience_year", 0) or 0
-            response["availability"] = response.get("availability") or "2 weeks"
-            response["lastAnalyzedAt"] = datetime.now().isoformat()
-            response["notes"] = response.get("notes") or []
+    # Run all tasks concurrently
+    results = await asyncio.gather(
+        *[process_single_analysis(job, candidate, chain) for job, candidate, chain in tasks],
+        return_exceptions=True
+    )
 
-            for s in response.get("skills", []):
-                if not isinstance(s.get("level"), str):
-                    s["level"] = "Intermediate"
-                if not isinstance(s.get("yearsOfExperience"), (int, float)):
-                    s["yearsOfExperience"] = 0
-                if "isVerified" not in s:
-                    s["isVerified"] = False
-
-            for s in response.get("aiInsights", {}).get("strengths", []):
-                try:
-                    s["weight"] = float(s.get("weight", 0))
-                except Exception:
-                    s["weight"] = 0.5
-
-            all_results.append(CandidateAnalysisResponse(**response))
+    # Filter out None and exception results
+    all_results = [r for r in results if r is not None and isinstance(r, CandidateAnalysisResponse)]
 
     filtered_results = [
         candidate for candidate in all_results
         if (candidate.matchScore or 0) >= (request.threshold or 0)
     ]
 
+    logger.info(f"Completed batch analysis: {len(all_results)} processed, {len(filtered_results)} passed threshold")
     return filtered_results
+
+
+def _analyze_candidate_for_job(job, candidate, chain) -> CandidateAnalysisResponse:
+    """Process a single candidate-job pair (runs in thread pool)"""
+    try:
+        job_json = json.dumps(job.dict(exclude_none=True), indent=2)
+        candidate_json = json.dumps(candidate.dict(exclude_none=True), indent=2)
+
+        raw_output = chain.invoke({"job_json": job_json, "candidate_json": candidate_json})
+        output_text = raw_output["text"] if isinstance(raw_output, dict) else raw_output
+        output_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", output_text.strip(), flags=re.DOTALL)
+
+        try:
+            response = json.loads(output_text)
+        except Exception:
+            cleaned = re.search(r"\{.*\}", output_text, re.DOTALL)
+            response = json.loads(cleaned.group(0)) if cleaned else {}
+
+        response["job_id"] = job.job_id or ""
+        response["id"] = response.get("id") or getattr(candidate, "candidateId", "") or ""
+        response["firstName"] = response.get("firstName") or getattr(candidate, "name", "").split()[0] if getattr(candidate, "name", None) else ""
+        response["lastName"] = response.get("lastName") or " ".join(getattr(candidate, "name", "").split()[1:]) if getattr(candidate, "name", None) else ""
+        response["email"] = response.get("email") or getattr(candidate, "email", "") or ""
+        response["phone"] = response.get("phone") or getattr(candidate, "phone", "") or ""
+        response["currentTitle"] = response.get("currentTitle") or getattr(candidate, "currentTitle", "") or ""
+        response["experienceYears"] = response.get("experienceYears") or getattr(candidate, "experience_year", 0) or 0
+        response["availability"] = response.get("availability") or "2 weeks"
+        response["lastAnalyzedAt"] = datetime.now().isoformat()
+        response["notes"] = response.get("notes") or []
+
+        for s in response.get("skills", []):
+            if not isinstance(s.get("level"), str):
+                s["level"] = "Intermediate"
+            if not isinstance(s.get("yearsOfExperience"), (int, float)):
+                s["yearsOfExperience"] = 0
+            if "isVerified" not in s:
+                s["isVerified"] = False
+
+        for s in response.get("aiInsights", {}).get("strengths", []):
+            try:
+                s["weight"] = float(s.get("weight", 0))
+            except Exception:
+                s["weight"] = 0.5
+
+        return CandidateAnalysisResponse(**response)
+    except Exception as e:
+        logger.error(f"Error in _analyze_candidate_for_job: {str(e)}")
+        raise

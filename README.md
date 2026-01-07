@@ -19,6 +19,28 @@ _Revolutionize your hiring process with cutting-edge AI technology_
 
 ## 📋 Overview
 
+TalentPulse-AI is a comprehensive AI-driven recruitment platform that streamlines the entire hiring workflow. From intelligent resume parsing to advanced candidate matching and automated interview question generation, our platform empowers HR teams to make data-driven hiring decisions.
+
+## ⚡ Performance Optimization (New!)
+
+The batch resume analysis endpoint has been **significantly optimized** for better performance:
+
+- **8-10x Faster**: Concurrent processing reduces time from minutes to seconds
+- **Scalable**: Handle 50+ candidates efficiently with configurable rate limiting
+- **Production Ready**: Smart API rate limit handling prevents quota issues
+
+### Quick Configuration
+
+Add to your `.env` file:
+
+```bash
+BATCH_CONCURRENT_LIMIT=10  # Adjust based on OpenAI API tier (3-20)
+```
+
+📖 **See [PERFORMANCE_OPTIMIZATION.md](PERFORMANCE_OPTIMIZATION.md) for detailed benchmarks and tuning guide.**
+
+---
+
 **TalentPulse-AI** is an enterprise-grade, AI-powered recruitment platform that transforms traditional HR processes into intelligent, automated workflows. Built with modern technologies and advanced AI capabilities, it delivers unparalleled efficiency in talent acquisition, candidate evaluation, and job description optimization.
 
 ### 🎯 Why TalentPulse-AI?
@@ -448,6 +470,7 @@ TalentPulse-AI features a **sophisticated, zero-downtime API fallback mechanism*
 ### 🔄 Fallback Flow
 
 #### **Scenario 1: Normal Operation (Gemini)**
+
 ```
 1. Agent invokes LLM
 2. _smart_generate_content() intercepts
@@ -458,6 +481,7 @@ TalentPulse-AI features a **sophisticated, zero-downtime API fallback mechanism*
 ```
 
 #### **Scenario 2: Quota Exceeded - Key Rotation**
+
 ```
 1. Agent invokes LLM
 2. _smart_generate_content() intercepts
@@ -476,6 +500,7 @@ TalentPulse-AI features a **sophisticated, zero-downtime API fallback mechanism*
 ```
 
 #### **Scenario 3: All Gemini Keys Exhausted - OpenAI Fallback**
+
 ```
 1. Agent invokes LLM
 2. _smart_generate_content() intercepts
@@ -491,6 +516,7 @@ TalentPulse-AI features a **sophisticated, zero-downtime API fallback mechanism*
 ```
 
 #### **Scenario 4: All APIs Failed**
+
 ```
 1. Agent invokes LLM
 2. _smart_generate_content() intercepts
@@ -504,6 +530,7 @@ TalentPulse-AI features a **sophisticated, zero-downtime API fallback mechanism*
 When using OpenAI fallback, responses are transformed to maintain compatibility:
 
 **OpenAI Response:**
+
 ```python
 {
   "choices": [{"message": {"content": "AI response here"}}],
@@ -516,6 +543,7 @@ When using OpenAI fallback, responses are transformed to maintain compatibility:
 ```
 
 **Transformed to Gemini Format:**
+
 ```python
 MockGeminiResponse(
   text="AI response here",
@@ -531,6 +559,7 @@ MockGeminiResponse(
 ### ⚙️ Configuration
 
 #### **Multiple Gemini Keys Setup**
+
 ```env
 # Primary key (highest priority)
 API_KEY_1=AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -546,7 +575,9 @@ OPENAI_API_KEY=sk-proj-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
 #### **Model Priority**
+
 The system tries models in this order:
+
 1. `gemini-2.5-flash` (fastest, most cost-effective)
 2. `gemini-1.5-flash` (fallback)
 3. `gemini-1.5-pro` (most capable)
@@ -574,11 +605,12 @@ The system logs all API operations:
 
 ### 🔍 How Agents Use OpenAI (Technical Deep Dive)
 
-**Question:** *"How does an agent initialized with `GoogleGenerativeAI` use OpenAI?"*
+**Question:** _"How does an agent initialized with `GoogleGenerativeAI` use OpenAI?"_
 
 **Answer:** Through **transparent interception at the SDK level**:
 
 1. **Agent Definition** (No changes needed):
+
 ```python
 llm = GoogleGenerativeAI(
     model=settings.model,
@@ -588,6 +620,7 @@ llm = GoogleGenerativeAI(
 ```
 
 2. **Monkey Patch Applied** (Automatic at startup):
+
 ```python
 # In config/Settings.py
 genai.GenerativeModel.generate_content = _smart_generate_content
@@ -622,6 +655,7 @@ except Exception as e:
 ### ⏰ Automatic Recovery
 
 Every **60 minutes**, the system attempts to restore primary Gemini keys:
+
 ```python
 if time.time() - settings.last_check_time > 3600:
     logging.info("🕐 1 Hour passed. Attempting to restore primary Gemini keys...")
