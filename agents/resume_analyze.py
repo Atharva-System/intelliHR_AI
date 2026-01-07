@@ -23,45 +23,107 @@ async def generate_batch_analysis_async(request: JobCandidateData) -> List[Candi
     max_concurrent = settings.batch_concurrent_limit
 
     raw_prompt = """
-    You are an expert AI recruiter and resume analyzer.
+    You are an expert AI recruiter analyzing candidate-job fit across all industries and roles.
 
-    Your task is to evaluate ONE candidate against ONE job using STRICT SCORING RULES.
-    You MUST calculate scores mathematically. Do NOT guess.
+    Evaluate this ONE candidate against this ONE job with precision and nuance.
+    DIFFERENTIATE between candidates - avoid identical scores unless truly equivalent.
 
-    ━━━━━━━━━━━
-    SCORING RULES (MANDATORY)
-    ━━━━━━━━━━━
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    UNIVERSAL SCORING FRAMEWORK
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    1. coreSkillsScore (0–100)
-    - 90–100: Meets all required + most preferred skills
-    - 70–89: Meets all required skills
-    - 40–69: Missing some required skills
-    - 0–39: Missing most required skills
+    ## 1. SKILLS MATCH SCORE (0-100) — Weight: 50%
 
-    2. experienceScore (0–100)
-    - 90–100: Experience exceeds requirement
-    - 70–89: Meets requirement
-    - 40–69: Slightly below requirement
-    - 0–39: Well below requirement
+    Analyze technical/domain skills AND soft skills:
 
-    3. culturalFitScore (0–100)
-    - Default to 60 if culture data is unclear
-    - Adjust ±20 based on leadership, communication, adaptability
+    **Technical/Domain Skills (70% of this score):**
+    - Count total required skills in job description
+    - Match each against candidate's skills (exact or close equivalent)
+    - Formula: (Matched Skills / Total Required Skills) × 70
+    - Bonus: +5 points per additional relevant skill not required
+    - Penalty: -10 points if missing critical/must-have skill
 
-    ━━━━━━━━━━━
-    FINAL SCORE FORMULA (STRICT)
-    ━━━━━━━━━━━
+    **Soft Skills (30% of this score):**
+    - Leadership, communication, teamwork, problem-solving
+    - Match against job requirements
+    - Formula: (Matched Soft Skills / Required Soft Skills) × 30
+
+    **Scoring Bands:**
+    - 90-100: All required skills + relevant extras, strong proficiency
+    - 80-89: All required skills with good proficiency
+    - 70-79: Most required skills (80%+), minor gaps
+    - 60-69: Moderate skills match (60-80%), notable gaps
+    - 50-59: Partial match (40-60%), significant gaps
+    - Below 50: Poor match, major skill gaps
+
+    ## 2. EXPERIENCE SCORE (0-100) — Weight: 30%
+
+    Evaluate relevant work experience:
+
+    **Years of Experience:**
+    - Compare candidate years vs job requirement
+    - Exact match = 70 base points
+    - Add/subtract 5 points per year above/below requirement
+    - Cap: minimum 30, maximum 95
+
+    **Experience Relevance (+30 points max):**
+    - Same role/title: +15 points
+    - Same industry: +10 points
+    - Similar role/related industry: +5 points
+    - Career progression (promotions): +5 points
+    - Large company/enterprise experience (if relevant): +5 points
+
+    **Scoring Bands:**
+    - 90-100: Exceeds requirement significantly, highly relevant
+    - 80-89: Exceeds requirement, very relevant background
+    - 70-79: Meets requirement with relevant experience
+    - 60-69: Slightly below requirement but compensated by relevance
+    - 50-59: Below requirement, limited relevance
+    - Below 50: Significantly underqualified
+
+    ## 3. CULTURAL FIT SCORE (0-100) — Weight: 20%
+
+    Assess alignment and adaptability:
+
+    **DO NOT default to 60** - analyze based on evidence:
+
+    **Evaluate from resume/profile (score 40-85):**
+    - Work style indicators: +10 if matches job (remote, collaborative, etc.)
+    - Career stability: +10 if appropriate job tenure, -10 if many short stints
+    - Growth mindset: +10 if shows learning/upskilling
+    - Role alignment: +10 if career trajectory matches this role
+    - Communication quality: +5 if well-written, professional resume
+
+    **Base Score:** 50 (neutral)
+    **Add/Subtract:** Based on above factors
+
+    **Scoring Bands:**
+    - 75-85: Excellent alignment, strong cultural indicators
+    - 65-74: Good fit, positive indicators
+    - 55-64: Adequate fit, neutral indicators
+    - 45-54: Questionable fit, some concerns
+    - Below 45: Poor fit, red flags
+
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    FINAL MATCH SCORE CALCULATION
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     matchScore =
-    (coreSkillsScore × 0.5) +
-    (experienceScore × 0.3) +
-    (culturalFitScore × 0.2)
+        (coreSkillsScore × 0.50) +
+        (experienceScore × 0.30) +
+        (culturalFitScore × 0.20)
 
-    RULES:
-    - matchScore MUST equal the formula result
-    - Round all scores to nearest integer
-    - Do NOT invent skills or experience
-    - If data is missing, LOWER the score
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    CRITICAL RULES
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    1. Calculate each component independently and precisely
+    2. Use specific evidence from candidate data
+    3. DIFFERENTIATE similar candidates by at least 2-4 points
+    4. Be realistic - use full 0-100 range, not just 70-90
+    5. Missing data = LOWER scores (don't assume)
+    6. Round component scores to 1 decimal, final matchScore to integer
+    7. Show your math in reasoningSummary
 
     ━━━━━━━━━━━
     OUTPUT REQUIREMENTS
@@ -183,7 +245,7 @@ def _analyze_candidate_for_job(job, candidate, prompt_template) -> CandidateAnal
         llm = ChatOpenAI(
             model=settings.model,
             api_key=settings.openai_api_key,
-            temperature=0,
+            temperature=0.2,  # Slight variation for nuanced scoring
             max_tokens=settings.max_output_tokens
         )
         chain = LLMChain(llm=llm, prompt=prompt_template)
