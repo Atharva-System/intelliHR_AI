@@ -5,6 +5,7 @@ from agents.jd_regenrate import key_resp_chain_re, soft_chain_re, tech_chain_re,
 from agents.jd_enhance import nice_chain,cert_chain,edu_chain,tech_chain,soft_chain,key_resp_chain
 import logging
 from typing import Dict, Any
+from config.Settings import QuotaLimitError
 
 # Configure logger for this module
 logger = logging.getLogger(__name__)
@@ -109,6 +110,10 @@ def regenerate_job_field(job: JobRefineInput):
                     logger.error(f"Value error processing {field_name}: {str(ve)}")
                     raise HTTPException(status_code=422, detail=f"Invalid data format for {field_name}: {str(ve)}")
 
+                except QuotaLimitError as qe:
+                    logger.error(f"Quota limit reached: {str(qe)}")
+                    raise HTTPException(status_code=429, detail="All API keys have reached their quota limit. Please try again later.")
+
                 except Exception as e:
                     logger.error(f"Unexpected error processing {field_name}: {str(e)}", exc_info=True)
                     raise HTTPException(status_code=500, detail=f"Error processing {field_name}: {str(e)}")
@@ -169,6 +174,10 @@ def enhance_job_field(job: JobRefineInput):
                 except ValueError as ve:
                     logger.error(f"Value error processing {field_name}: {str(ve)}")
                     raise HTTPException(status_code=422, detail=f"Invalid data format for {field_name}: {str(ve)}")
+
+                except QuotaLimitError as qe:
+                    logger.error(f"Quota limit reached: {str(qe)}")
+                    raise HTTPException(status_code=429, detail="All API keys have reached their quota limit. Please try again later.")
 
                 except Exception as e:
                     logger.error(f"Unexpected error processing {field_name}: {str(e)}", exc_info=True)

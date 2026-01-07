@@ -1,28 +1,21 @@
 import json
+import time
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain_google_genai import GoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain.output_parsers import PydanticOutputParser
 from agents.types import CandidateAllInOne
 from app.services.text_extract import pdf_to_text
 from config.Settings import settings
 from datetime import datetime
 
-today = datetime.today()
 
-month = today.month
-year = today.year
 
-from config.Settings import settings
-import google.generativeai as genai
-
-genai.configure(api_key=settings.api_key)
-model = genai.GenerativeModel(settings.model)
-llm = GoogleGenerativeAI(
+llm = ChatOpenAI(
     model=settings.model,
-    google_api_key=settings.api_key,
+    api_key=settings.openai_api_key,
     temperature=settings.temperature,
-    max_output_tokens=settings.max_output_tokens
+    max_tokens=settings.max_output_tokens
 )
 
 parser = PydanticOutputParser(pydantic_object=CandidateAllInOne)
@@ -50,9 +43,10 @@ You are an expert information extractor. Extract candidate details from the give
   1. For each work_experience entry, determine duration:
      - If start_date and end_date are provided, compute months difference.
      - If end_date is missing:
-       - If is_current=true → use current month {month} and year {year}.
+       - If it is the most recent work experience or is_current=true → use current month {month} and year {year}.
        - Else → assume end_date is **the start_date of the next work_experience minus one month**.
      - If end_date is "Till date", "Present", or similar, use current month and year.
+     - If end_date is not mentioned and it's the current role, use current month and year.
      - If only year is given, assume January as start month and December as end month.
   2. Sum all months across all work_experience entries.
   3. Convert total months to years as a float with **one decimal**:
@@ -105,9 +99,7 @@ Follow these rules carefully:
      - For QA: "Software Testing", "Test Automation", "Quality Assurance", "API Testing"
      - For Dev: "Software Development", "Web Development", "Backend Development", "Frontend Development"
 
-  4. **Experience & Level Tags:**  
-     - Based on calculated experience_year
-     - Examples: "Fresher", "2+ Years Experience", "Senior Engineer", "5+ Years Experience", "8+ Years Experience", "Mid-Level Professional", "Lead Engineer"
+
 
   5. **Methodology / Process Tags (if applicable):**  
      - Examples: "Agile", "Scrum", "CI/CD", "DevOps", "TDD", "BDD", "Microservices"
@@ -210,14 +202,44 @@ candidate_extraction_chain = LLMChain(
 
 def resume_extract_info(pdf_path):
     input_text = pdf_to_text(pdf_path)
+    
+    # Get current month and year using time library
+    current_time = time.localtime()
+    month = current_time.tm_mon
+    year = current_time.tm_year
+    
     try:
-        candidate = candidate_extraction_chain.run(text=input_text,month=month,year=year)
+        candidate = candidate_extraction_chain.run(text=input_text, month=month, year=year)
         result = json.loads(candidate.json())  # Parse the JSON string into a dictionary
     except Exception:
-        raw_output = llm(f"Extract JSON only from this text:\n{input_text}")
+        raw_output = llm.invoke(f"Extract JSON only from this text:\n{input_text}").content
         try:
             result = json.loads(raw_output)  # Ensure this is a dictionary
         except json.JSONDecodeError as json_err:
             raise Exception(f"Failed to parse extracted JSON: {str(json_err)}")
+
+    # Manually add Experience Level Tag based on experience_year
+    if result.get('ai_analysis') and result['ai_analysis'].get('experience_year') is not None:
+        exp_year = result['ai_analysis']['experience_year']
+        level_tag = ""
+        
+        if 0 <= exp_year < 1:
+            level_tag = "Entry Level"
+        elif 1 <= exp_year < 3:
+            level_tag = "Junior"
+        elif 3 <= exp_year < 5:
+            level_tag = "Mid Level"
+        elif 5 <= exp_year < 8:
+            level_tag = "Mid-Senior Level"
+        elif 8 <= exp_year < 12:
+            level_tag = "Senior"
+        elif 12 <= exp_year < 15:
+            level_tag = "Lead/Principal"
+        elif exp_year >= 15:
+            level_tag = "Principal/Director"
+        
+        if level_tag:
+            result['ai_analysis']['experience_level'] = level_tag
+
     print(result)
     return result

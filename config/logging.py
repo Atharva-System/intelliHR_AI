@@ -10,5 +10,6 @@ def setup_logging(level: str = "INFO") -> None:
         handlers=[
             logging.StreamHandler(sys.stdout),
             logging.FileHandler("app.log")
-        ]
+        ],
+        force=True
     )

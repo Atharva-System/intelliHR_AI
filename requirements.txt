@@ -11,7 +11,7 @@ dnspython==2.7.0
 email-validator==2.3.0
 fastapi==0.116.1
 filetype==1.2.0
-google-ai-generativelanguage==0.6.15
+
 google-api-core==2.25.1
 google-auth==2.40.3
 googleapis-common-protos==1.70.0
@@ -28,7 +28,7 @@ jsonpatch==1.33
 jsonpointer==3.0.0
 langchain==0.3.27
 langchain-core==0.3.74
-langchain-google-genai==2.0.4
+
 langchain-openai==0.3.31
 langchain-text-splitters==0.3.9
 langgraph==0.6.6
@@ -86,6 +86,4 @@ xxhash==3.5.0
 zstandard==0.24.0
 pydantic-settings
 scikit-learn
-fastembed
 langchain-community
-google-generativeai==0.8.5

@@ -7,6 +7,7 @@ from app.models.jd_model import JobInput, JobTitleAISuggestInput, JobDescription
 import json
 import logging
 from app.models.resume_analyze_model import BatchAnalyzeRequest, BatchAnalyzeResponse
+from config.Settings import QuotaLimitError
 
 router = APIRouter()
 
@@ -20,6 +21,9 @@ def generate_job_description(job: JobInput):
             subDepartment=job.subDepartment or ""
         )
         return response
+    except QuotaLimitError as e:
+        logging.error(f"Quota limit reached: {str(e)}")
+        raise HTTPException(status_code=429, detail="All API keys have reached their quota limit. Please try again later.")
     except Exception as e:
         logging.error(f"Error generating job description: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to generate job description")
@@ -29,6 +33,9 @@ def job_title_suggestion(job: JobTitleAISuggestInput):
     try:
         response = title_suggests(job)
         return response
+    except QuotaLimitError as e:
+        logging.error(f"Quota limit reached: {str(e)}")
+        raise HTTPException(status_code=429, detail="All API keys have reached their quota limit. Please try again later.")
     except Exception as e:
         logging.error(f"Error generating title suggestions: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to generate title suggestions")
@@ -48,6 +55,9 @@ def generate_job_tags(job: JobDescriptionInput):
             nice_to_have=job.nice_to_have
         )
         return JobTagsOutput(tags=response.get("tags", []))
+    except QuotaLimitError as e:
+        logging.error(f"Quota limit reached: {str(e)}")
+        raise HTTPException(status_code=429, detail="All API keys have reached their quota limit. Please try again later.")
     except Exception as e:
         logging.error(f"Error generating job tags: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to generate job tags")
