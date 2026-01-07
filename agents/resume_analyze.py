@@ -119,11 +119,13 @@ async def generate_batch_analysis_async(request: JobCandidateData) -> List[Candi
 
     1. Calculate each component independently and precisely
     2. Use specific evidence from candidate data
-    3. DIFFERENTIATE similar candidates by at least 2-4 points
-    4. Be realistic - use full 0-100 range, not just 70-90
-    5. Missing data = LOWER scores (don't assume)
-    6. Round component scores to 1 decimal, final matchScore to integer
-    7. Write reasoningSummary for recruiters - make it actionable and decision-focused:
+    3. AVOID SCORE CLUSTERING - even similar candidates should differ by 3-5 points
+    4. Be granular - use the full 0-100 range, especially 60-95 range
+    5. Look for subtle differences: proficiency levels, years with each skill, project scale
+    6. If candidates seem similar, examine: additional skills, experience depth, career trajectory
+    7. Missing data = LOWER scores (don't assume)
+    8. Round component scores to 1 decimal, final matchScore to integer
+    9. Write reasoningSummary for recruiters - make it actionable and decision-focused:
        - NO formulas, NO calculations, NO math - use plain professional English
        - Start with overall fit: "Strong match" / "Good fit with gaps" / "Partial match"
        - List key matched skills/experience that align with job requirements
@@ -252,7 +254,7 @@ def _analyze_candidate_for_job(job, candidate, prompt_template) -> CandidateAnal
         llm = ChatOpenAI(
             model=settings.model,
             api_key=settings.openai_api_key,
-            temperature=0.2,  # Slight variation for nuanced scoring
+            temperature=0.4,  # Higher temp for better score variation and differentiation
             max_tokens=settings.max_output_tokens
         )
         chain = LLMChain(llm=llm, prompt=prompt_template)
