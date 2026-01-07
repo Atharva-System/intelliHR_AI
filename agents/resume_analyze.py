@@ -123,7 +123,14 @@ async def generate_batch_analysis_async(request: JobCandidateData) -> List[Candi
     4. Be realistic - use full 0-100 range, not just 70-90
     5. Missing data = LOWER scores (don't assume)
     6. Round component scores to 1 decimal, final matchScore to integer
-    7. Show your math in reasoningSummary
+    7. Write reasoningSummary for recruiters - make it actionable and decision-focused:
+       - NO formulas, NO calculations, NO math - use plain professional English
+       - Start with overall fit: "Strong match" / "Good fit with gaps" / "Partial match"
+       - List key matched skills/experience that align with job requirements
+       - Highlight critical gaps or missing qualifications
+       - Mention unique strengths or standout qualities
+       - End with clear hiring recommendation: "Recommended for interview" / "Consider for phone screen" / "May need additional training" / "Not recommended at this time"
+       - Keep it concise (3-5 sentences max) but informative
 
     ━━━━━━━━━━━
     OUTPUT REQUIREMENTS
