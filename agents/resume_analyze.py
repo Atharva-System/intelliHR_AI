@@ -144,30 +144,29 @@ async def generate_batch_analysis_async(request: JobCandidateData) -> List[Candi
     """
 
     prompt = PromptTemplate.from_template(raw_prompt)
-    chain = LLMChain(llm=llm, prompt=prompt)
 
     # Create list of all job-candidate pairs to process
     tasks = []
     for job in request.jobs or []:
         for candidate in request.candidates or []:
-            tasks.append((job, candidate, chain))
+            tasks.append((job, candidate, llm, prompt))
 
     logger.info(f"Processing {len(tasks)} job-candidate pairs concurrently (max {max_concurrent} at a time)")
 
     # Process tasks concurrently with semaphore for rate limiting
     semaphore = asyncio.Semaphore(max_concurrent)
 
-    async def process_single_analysis(job, candidate, chain):
+    async def process_single_analysis(job, candidate, llm, prompt):
         async with semaphore:
             try:
-                return await asyncio.to_thread(_analyze_candidate_for_job, job, candidate, chain)
+                return await asyncio.to_thread(_analyze_candidate_for_job, job, candidate, llm, prompt)
             except Exception as e:
                 logger.error(f"Error processing candidate {getattr(candidate, 'candidateId', 'unknown')}: {str(e)}")
                 return None
 
     # Run all tasks concurrently
     results = await asyncio.gather(
-        *[process_single_analysis(job, candidate, chain) for job, candidate, chain in tasks],
+        *[process_single_analysis(job, candidate, llm, prompt) for job, candidate, llm, prompt in tasks],
         return_exceptions=True
     )
 
@@ -183,9 +182,12 @@ async def generate_batch_analysis_async(request: JobCandidateData) -> List[Candi
     return filtered_results
 
 
-def _analyze_candidate_for_job(job, candidate, chain) -> CandidateAnalysisResponse:
+def _analyze_candidate_for_job(job, candidate, llm, prompt) -> CandidateAnalysisResponse:
     """Process a single candidate-job pair (runs in thread pool)"""
     try:
+        # Create a new chain for each call to avoid shared state issues
+        chain = LLMChain(llm=llm, prompt=prompt)
+
         job_json = json.dumps(job.dict(exclude_none=True), indent=2)
         candidate_json = json.dumps(candidate.dict(exclude_none=True), indent=2)
 
