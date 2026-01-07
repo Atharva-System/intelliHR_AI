@@ -21,12 +21,6 @@ def generate_batch_analysis(request: JobCandidateData) -> List[CandidateAnalysis
 async def generate_batch_analysis_async(request: JobCandidateData) -> List[CandidateAnalysisResponse]:
     """Async batch analysis with concurrent processing"""
     max_concurrent = settings.batch_concurrent_limit
-    llm = ChatOpenAI(
-        model=settings.model,
-        api_key=settings.openai_api_key,
-        temperature=0,
-        max_tokens=settings.max_output_tokens
-    )
 
     raw_prompt = """
     You are an expert AI recruiter and resume analyzer.
@@ -143,30 +137,30 @@ async def generate_batch_analysis_async(request: JobCandidateData) -> List[Candi
 
     """
 
-    prompt = PromptTemplate.from_template(raw_prompt)
+    prompt_template = PromptTemplate.from_template(raw_prompt)
 
     # Create list of all job-candidate pairs to process
     tasks = []
     for job in request.jobs or []:
         for candidate in request.candidates or []:
-            tasks.append((job, candidate, llm, prompt))
+            tasks.append((job, candidate, prompt_template))
 
     logger.info(f"Processing {len(tasks)} job-candidate pairs concurrently (max {max_concurrent} at a time)")
 
     # Process tasks concurrently with semaphore for rate limiting
     semaphore = asyncio.Semaphore(max_concurrent)
 
-    async def process_single_analysis(job, candidate, llm, prompt):
+    async def process_single_analysis(job, candidate, prompt_template):
         async with semaphore:
             try:
-                return await asyncio.to_thread(_analyze_candidate_for_job, job, candidate, llm, prompt)
+                return await asyncio.to_thread(_analyze_candidate_for_job, job, candidate, prompt_template)
             except Exception as e:
                 logger.error(f"Error processing candidate {getattr(candidate, 'candidateId', 'unknown')}: {str(e)}")
                 return None
 
     # Run all tasks concurrently
     results = await asyncio.gather(
-        *[process_single_analysis(job, candidate, llm, prompt) for job, candidate, llm, prompt in tasks],
+        *[process_single_analysis(job, candidate, prompt_template) for job, candidate, prompt_template in tasks],
         return_exceptions=True
     )
 
@@ -182,11 +176,17 @@ async def generate_batch_analysis_async(request: JobCandidateData) -> List[Candi
     return filtered_results
 
 
-def _analyze_candidate_for_job(job, candidate, llm, prompt) -> CandidateAnalysisResponse:
+def _analyze_candidate_for_job(job, candidate, prompt_template) -> CandidateAnalysisResponse:
     """Process a single candidate-job pair (runs in thread pool)"""
     try:
-        # Create a new chain for each call to avoid shared state issues
-        chain = LLMChain(llm=llm, prompt=prompt)
+        # Create completely fresh LLM and chain for each call - no shared state
+        llm = ChatOpenAI(
+            model=settings.model,
+            api_key=settings.openai_api_key,
+            temperature=0,
+            max_tokens=settings.max_output_tokens
+        )
+        chain = LLMChain(llm=llm, prompt=prompt_template)
 
         job_json = json.dumps(job.dict(exclude_none=True), indent=2)
         candidate_json = json.dumps(candidate.dict(exclude_none=True), indent=2)
