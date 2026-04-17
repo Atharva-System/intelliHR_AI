@@ -1,10 +1,9 @@
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
-from langchain_openai import ChatOpenAI
 from agents.types import JobDescriptionTitleAISuggest
 from app.models.jd_model import JobTitleAISuggestInput
-from config.Settings import settings
+from agents.llm import get_llm
 
 def title_suggests(job:JobTitleAISuggestInput):
     job_title_prompt = PromptTemplate(
@@ -43,12 +42,7 @@ def title_suggests(job:JobTitleAISuggestInput):
     parser = PydanticOutputParser(pydantic_object=JobDescriptionTitleAISuggest)
 
 
-    llm = ChatOpenAI(
-        model=settings.model,
-        api_key=settings.openai_api_key,
-        temperature=settings.temperature,
-        max_tokens=settings.max_output_tokens
-    )
+    llm = get_llm()
 
     chain = LLMChain(llm=llm,prompt=job_title_prompt,verbose=True,output_parser=parser)
 

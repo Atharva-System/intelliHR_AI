@@ -16,8 +16,8 @@ from config.Settings import settings, QuotaLimitError
 from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
 from agents.resume_analyze import generate_batch_analysis_async
 from agents.ai_question_generate import generate_interview_questions
+from agents.llm import get_embeddings
 from sklearn.metrics.pairwise import cosine_similarity
-from langchain_openai import OpenAIEmbeddings
 from langsmith import traceable
 import numpy as np
 logger = logging.getLogger(__name__)
@@ -306,7 +306,7 @@ async def batch_analyze_resumes_api(request: JobCandidateData):
             logger.warning("Empty candidates or jobs list")
             return []
 
-        embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+        embeddings = get_embeddings()
         all_results = []
 
         MINIMUM_ELIGIBLE_SCORE = settings.minimum_eligible_score

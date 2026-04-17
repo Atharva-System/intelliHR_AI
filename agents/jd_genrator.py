@@ -2,8 +2,7 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from agents.types import JobDescriptionOutline
 from langchain.output_parsers import PydanticOutputParser
-from langchain_openai import ChatOpenAI
-from config.Settings import settings
+from agents.llm import get_llm
 
 def return_jd(title, experienceRange, department, subDepartment):
     template = """
@@ -36,12 +35,7 @@ def return_jd(title, experienceRange, department, subDepartment):
     parser = PydanticOutputParser(pydantic_object=JobDescriptionOutline)
 
 
-    llm = ChatOpenAI(
-        model=settings.model,
-        api_key=settings.openai_api_key,
-        temperature=settings.temperature,
-        max_tokens=settings.max_output_tokens
-    )
+    llm = get_llm()
 
     chain = LLMChain(llm=llm,prompt=prompt,verbose=True,output_parser=parser)
     raw_output = chain.invoke({

@@ -4,19 +4,13 @@ import logging
 from fastapi import HTTPException
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from app.models.chatbot_model import ChatRequest, ChatResponse
-from config.Settings import settings
+from agents.llm import get_llm
 
 FILE_PATH = "candidate_data.txt"
 
-llm = ChatOpenAI(
-    model=settings.model,
-    api_key=settings.openai_api_key,
-    temperature=settings.temperature,
-    max_tokens=settings.max_output_tokens
-)
+llm = get_llm()
 
 memory = ConversationBufferMemory()
 

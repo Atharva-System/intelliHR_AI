@@ -1,9 +1,8 @@
 import re
 import json
 from fastapi import APIRouter, HTTPException
-from langchain_openai import ChatOpenAI
 import logging
-from config.Settings import settings
+from agents.llm import get_llm
 from app.models.resume_analyze_model import AIPromptQuestionRequest, AIPromptQuestionResponse
 
 logger = logging.getLogger(__name__)
@@ -36,12 +35,7 @@ def generate_prompt_based_questions(request: AIPromptQuestionRequest) -> AIPromp
         return AIPromptQuestionResponse(questions_to_ask=[])
     
     # Initialize model
-    llm = ChatOpenAI(
-        model=settings.model,
-        api_key=settings.openai_api_key,
-        temperature=settings.temperature,
-        max_tokens=settings.max_output_tokens
-    )
+    llm = get_llm()
     
     prompt = f"""You are an interview question generator.
 
