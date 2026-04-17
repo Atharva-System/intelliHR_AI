@@ -6,6 +6,7 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
 from agents.llm import get_llm
+from config.Settings import settings
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import logging
