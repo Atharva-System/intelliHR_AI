@@ -2,21 +2,15 @@ import json
 import time
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
 from langchain.output_parsers import PydanticOutputParser
 from agents.types import CandidateAllInOne
 from app.services.text_extract import pdf_to_text
-from config.Settings import settings
+from agents.llm import get_llm
 from datetime import datetime
 
 
 
-llm = ChatOpenAI(
-    model=settings.model,
-    api_key=settings.openai_api_key,
-    temperature=settings.temperature,
-    max_tokens=settings.max_output_tokens
-)
+llm = get_llm()
 
 parser = PydanticOutputParser(pydantic_object=CandidateAllInOne)
 

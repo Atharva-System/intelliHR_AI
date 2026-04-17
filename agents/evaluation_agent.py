@@ -1,15 +1,9 @@
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
-from langchain_openai import ChatOpenAI
-from config.Settings import settings
+from agents.llm import get_llm
 from app.models.evaluation_model import InterviewSummaryRequest, EvaluationResponse
 
-llm = ChatOpenAI(
-    model=settings.model,
-    api_key=settings.openai_api_key,
-    temperature=settings.temperature,
-    max_tokens=settings.max_output_tokens
-)
+llm = get_llm()
 
 parser = PydanticOutputParser(pydantic_object=EvaluationResponse)
 
