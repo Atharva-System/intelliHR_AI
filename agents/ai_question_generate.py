@@ -3,10 +3,9 @@ from pydantic import BaseModel
 from typing import List, Dict
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
 import json
 from app.models.resume_analyze_model import AIQuestionRequest, AIQuestionResponse
-from config.Settings import settings
+from agents.llm import get_llm
 
 def escape_prompt(text: str) -> str:
     """
@@ -19,12 +18,7 @@ def escape_prompt(text: str) -> str:
 
 
 def generate_interview_questions(request: AIQuestionRequest) -> AIQuestionResponse:
-    llm = ChatOpenAI(
-        model=settings.model,
-        api_key=settings.openai_api_key,
-        temperature=settings.temperature,
-        max_tokens=settings.max_output_tokens
-    )
+    llm = get_llm()
     
     
     original_prompt = """

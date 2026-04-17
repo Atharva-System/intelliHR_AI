@@ -4,8 +4,8 @@ from typing import List
 from datetime import datetime
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
 from app.models.batch_analyze_model import JobCandidateData, CandidateAnalysisResponse
+from agents.llm import get_llm
 from config.Settings import settings
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
@@ -251,12 +251,7 @@ def _analyze_candidate_for_job(job, candidate, prompt_template) -> CandidateAnal
     """Process a single candidate-job pair (runs in thread pool)"""
     try:
         # Create completely fresh LLM and chain for each call - no shared state
-        llm = ChatOpenAI(
-            model=settings.model,
-            api_key=settings.openai_api_key,
-            temperature=0.4,  # Higher temp for better score variation and differentiation
-            max_tokens=settings.max_output_tokens
-        )
+        llm = get_llm(temperature=0.4)  # Higher temp for better score variation
         chain = LLMChain(llm=llm, prompt=prompt_template)
 
         job_json = json.dumps(job.dict(exclude_none=True), indent=2)
